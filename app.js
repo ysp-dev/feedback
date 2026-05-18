@@ -179,6 +179,20 @@ async function copyReply() {
   setTimeout(() => { btn.textContent = "클립보드 복사"; btn.classList.remove("copied"); }, 2000);
 }
 
+// --- Reset ---
+function resetAll() {
+  selectedFile = null;
+  document.getElementById("camera-input").value = "";
+  document.getElementById("file-input").value = "";
+  document.getElementById("preview-img").style.display = "none";
+  document.getElementById("ocr-btn").disabled = true;
+  document.getElementById("ocr-text").value = "";
+  document.getElementById("ocr-error").classList.add("d-none");
+  document.getElementById("reply-btn").disabled = true;
+  document.getElementById("reply-text").value = "";
+  document.getElementById("reply-error").classList.add("d-none");
+}
+
 // --- API Section toggle ---
 function collapseApiSection() {
   document.getElementById("api-input-wrap").classList.add("d-none");

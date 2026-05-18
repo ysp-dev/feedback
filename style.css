@@ -21,6 +21,7 @@ body {
 
 /* ── Header ── */
 .app-header {
+  position: relative;
   text-align: center;
   padding: .9rem 0;
   border-top: 1px solid #000;
@@ -28,6 +29,22 @@ body {
   margin-top: 1.25rem;
   margin-bottom: 1.5rem;
 }
+
+.refresh-btn {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  padding: .25rem;
+  display: flex;
+  align-items: center;
+  transition: color .15s;
+}
+.refresh-btn:hover { color: #000; }
 
 .app-title {
   font-size: 13px;
