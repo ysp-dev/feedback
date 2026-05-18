@@ -19,7 +19,8 @@ function loadKey() {
 function saveKey(type) {
   const inputId = type + "-key-input";
   const storageKey = type === "gemini" ? GEMINI_STORAGE_KEY : OPENAI_STORAGE_KEY;
-  const k = document.getElementById(inputId).value.trim();
+  const k = document.getElementById(inputId).value
+    .replace(/[\s​‌‍﻿]/g, "");
   if (!k) return alert("API 키를 입력해주세요.");
   localStorage.setItem(storageKey, k);
   updateKeyStatus(type + "-key-status", k);
@@ -27,13 +28,19 @@ function saveKey(type) {
 }
 
 async function testOpenAIKey(apiKey) {
-  if (!apiKey.startsWith("sk-")) {
-    document.getElementById("openai-key-status").innerHTML =
-      '<span style="color:#ef4444">키 형식 오류 (sk- 로 시작해야 함)</span>';
+  const statusEl = document.getElementById("openai-key-status");
+
+  // 1단계: 도메인 접근 가능 여부 (no-cors = CORS 없이 단순 연결 확인)
+  statusEl.innerHTML = '<span style="color:#6b7280">도메인 확인 중...</span>';
+  try {
+    await fetch("https://api.openai.com", { mode: "no-cors" });
+  } catch (e) {
+    statusEl.innerHTML = '<span style="color:#ef4444">도메인 차단: api.openai.com 에 연결 불가 (네트워크/방화벽)</span>';
     return;
   }
-  const statusEl = document.getElementById("openai-key-status");
-  statusEl.innerHTML = '<span style="color:#6b7280">확인 중...</span>';
+
+  // 2단계: API 키 인증 확인
+  statusEl.innerHTML = '<span style="color:#6b7280">키 확인 중...</span>';
   try {
     const res = await fetch("https://api.openai.com/v1/models", {
       mode: "cors",
@@ -44,10 +51,10 @@ async function testOpenAIKey(apiKey) {
       statusEl.innerHTML = '<span class="ok">저장됨 (' + apiKey.slice(0, 8) + '...) — 연결 OK</span>';
     } else {
       const data = await res.json();
-      statusEl.innerHTML = '<span style="color:#ef4444">오류: ' + (data.error?.message || res.status) + '</span>';
+      statusEl.innerHTML = '<span style="color:#ef4444">키 오류: ' + (data.error?.message || res.status) + '</span>';
     }
   } catch (e) {
-    statusEl.innerHTML = '<span style="color:#ef4444">연결 실패: ' + e.message + '</span>';
+    statusEl.innerHTML = '<span style="color:#ef4444">CORS 차단 — 도메인은 열리나 Authorization 헤더가 막힘</span>';
   }
 }
 
