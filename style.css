@@ -10,7 +10,28 @@ body {
   background: #fff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior-y: contain;
 }
+
+.ptr-indicator {
+  position: fixed;
+  top: -48px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  transition: color .2s;
+  z-index: 999;
+  pointer-events: none;
+}
+.ptr-indicator.ptr-ready { color: #000; }
 
 /* ── Layout ── */
 .wrap {

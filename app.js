@@ -320,5 +320,40 @@ function toggleApiSection() {
   wrap.classList.contains("d-none") ? expandApiSection() : collapseApiSection();
 }
 
+// --- Pull to refresh ---
+(function () {
+  const THRESHOLD = 80;
+  const indicator = document.getElementById("ptr-indicator");
+  let startY = 0;
+  let active = false;
+
+  document.addEventListener("touchstart", e => {
+    if (window.scrollY === 0) {
+      startY = e.touches[0].clientY;
+      active = true;
+    }
+  }, { passive: true });
+
+  document.addEventListener("touchmove", e => {
+    if (!active) return;
+    const delta = Math.max(0, e.touches[0].clientY - startY);
+    const progress = Math.min(delta / THRESHOLD, 1);
+    const translateY = Math.min(delta * 0.5, 48);
+    indicator.style.transform = `translateX(-50%) translateY(${translateY}px)`;
+    indicator.style.opacity = progress;
+    indicator.classList.toggle("ptr-ready", delta >= THRESHOLD);
+  }, { passive: true });
+
+  document.addEventListener("touchend", e => {
+    if (!active) return;
+    active = false;
+    const delta = e.changedTouches[0].clientY - startY;
+    indicator.style.transform = "translateX(-50%) translateY(0)";
+    indicator.style.opacity = 0;
+    indicator.classList.remove("ptr-ready");
+    if (delta >= THRESHOLD && window.scrollY === 0) resetAll();
+  });
+})();
+
 // init
 loadKey();
