@@ -1,6 +1,6 @@
-const STORAGE_KEY = "openai_api_key";
-const API_BASE = "https://api.openai.com/v1/chat/completions";
-const MODEL = "gpt-5.5";
+const STORAGE_KEY = "gemini_api_key";
+const MODEL = "gemini-2.5-flash";
+const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent";
 
 // --- API Key ---
 function loadKey() {
@@ -11,38 +11,11 @@ function loadKey() {
 }
 
 function saveKey() {
-  const raw = document.getElementById("api-key-input").value;
-  const k = raw.replace(/[\s​‌‍﻿]/g, "");
+  const k = document.getElementById("api-key-input").value.trim();
   if (!k) return alert("API 키를 입력해주세요.");
   localStorage.setItem(STORAGE_KEY, k);
-  testKey(k);
-}
-
-async function testKey(apiKey) {
-  const statusEl = document.getElementById("key-status");
-  statusEl.innerHTML = '<span style="color:#6b7280">확인 중...</span>';
-  try {
-    await fetch("https://api.openai.com", { mode: "no-cors" });
-  } catch (e) {
-    statusEl.innerHTML = '<span style="color:#ef4444">연결 불가 (네트워크/방화벽)</span>';
-    return;
-  }
-  try {
-    const res = await fetch("https://api.openai.com/v1/models", {
-      mode: "cors",
-      credentials: "omit",
-      headers: { "Authorization": "Bearer " + apiKey }
-    });
-    if (res.ok) {
-      statusEl.innerHTML = '<span class="ok">저장됨 (' + apiKey.slice(0, 8) + '...) — 연결 OK</span>';
-      collapseApiSection();
-    } else {
-      const data = await res.json();
-      statusEl.innerHTML = '<span style="color:#ef4444">키 오류: ' + (data.error?.message || res.status) + '</span>';
-    }
-  } catch (e) {
-    statusEl.innerHTML = '<span style="color:#ef4444">CORS 오류: ' + e.message + '</span>';
-  }
+  updateKeyStatus(k);
+  collapseApiSection();
 }
 
 function updateKeyStatus(k) {
@@ -138,24 +111,15 @@ async function runOcr() {
     const mimeType = selectedFile.type || "image/jpeg";
 
     const body = {
-      model: MODEL,
-      messages: [{
-        role: "user",
-        content: [
-          {
-            type: "image_url",
-            image_url: { url: "data:" + mimeType + ";base64," + b64 }
-          },
-          {
-            type: "text",
-            text: "이 문서에서 텍스트를 정확히 추출해줘. 원본 형식(줄바꿈, 단락 구조)을 최대한 유지하고, 오직 추출된 텍스트만 반환해줘."
-          }
+      contents: [{
+        parts: [
+          { inline_data: { mime_type: mimeType, data: b64 } },
+          { text: "이 문서에서 텍스트를 정확히 추출해줘. 원본 형식(줄바꿈, 단락 구조)을 최대한 유지하고, 오직 추출된 텍스트만 반환해줘." }
         ]
-      }],
-      max_tokens: 4096
+      }]
     };
 
-    const text = await callOpenAI(apiKey, body);
+    const text = await callGemini(apiKey, body);
     document.getElementById("ocr-text").value = text;
     document.getElementById("reply-btn").disabled = false;
   } catch (e) {
@@ -179,30 +143,27 @@ async function runReply() {
 
   try {
     const body = {
-      model: MODEL,
-      messages: [
-        {
-          role: "system",
-          content:
-            "당신은 전문적인 비즈니스 커뮤니케이션 전문가입니다. " +
-            "피드백을 주신 한 분께 드리는 답변 메시지를 작성합니다. " +
-            "메일 형식(수신자, 제목, 서명 등)이 아닌 자연스러운 답변글 형식으로 작성합니다."
-        },
-        {
-          role: "user",
-          content:
-            "다음은 경영진 한 분이 주신 피드백입니다. 이 분께 드릴 정중하고 전문적인 답변글을 작성해주세요:\n\n" +
-            feedbackText + "\n\n" +
-            "작성 조건:\n" +
-            "- 메일 형식(수신자, 제목, 발신자 서명 등) 없이 답변 본문만 작성\n" +
-            "- 피드백 주신 분 한 분께 직접 드리는 말투\n" +
-            "- 감사함을 표현하고, 피드백 핵심에 직접 응답하며, 향후 개선 의지 포함\n" +
-            "- 답변 길이는 피드백 텍스트(" + feedbackText.length + "자)와 비슷한 수준"
-        }
-      ]
+      system_instruction: {
+        parts: [{ text:
+          "당신은 전문적인 비즈니스 커뮤니케이션 전문가입니다. " +
+          "피드백을 주신 한 분께 드리는 답변 메시지를 작성합니다. " +
+          "메일 형식(수신자, 제목, 서명 등)이 아닌 자연스러운 답변글 형식으로 작성합니다."
+        }]
+      },
+      contents: [{
+        parts: [{ text:
+          "다음은 경영진 한 분이 주신 피드백입니다. 이 분께 드릴 정중하고 전문적인 답변글을 작성해주세요:\n\n" +
+          feedbackText + "\n\n" +
+          "작성 조건:\n" +
+          "- 메일 형식(수신자, 제목, 발신자 서명 등) 없이 답변 본문만 작성\n" +
+          "- 피드백 주신 분 한 분께 직접 드리는 말투\n" +
+          "- 감사함을 표현하고, 피드백 핵심에 직접 응답하며, 향후 개선 의지 포함\n" +
+          "- 답변 길이는 피드백 텍스트(" + feedbackText.length + "자)와 비슷한 수준"
+        }]
+      }]
     };
 
-    const text = await callOpenAI(apiKey, body);
+    const text = await callGemini(apiKey, body);
     document.getElementById("reply-text").value = text;
   } catch (e) {
     showError("reply-error", e.message);
@@ -211,36 +172,42 @@ async function runReply() {
   }
 }
 
-// --- OpenAI API ---
-async function callOpenAI(apiKey, body, retries = 3) {
+// --- Gemini API ---
+async function callGemini(apiKey, body, retries = 3) {
   for (let i = 0; i < retries; i++) {
-    let res;
-    try {
-      res = await fetch(API_BASE, {
-        method: "POST",
-        mode: "cors",
-        credentials: "omit",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + apiKey,
-        },
-        body: JSON.stringify(body),
-      });
-    } catch (netErr) {
-      if (i < retries - 1) { await sleep(2000); continue; }
-      throw new Error("네트워크 오류: OpenAI 서버에 연결할 수 없습니다. (" + netErr.message + ")");
-    }
+    const res = await fetch(API_BASE, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
+      body: JSON.stringify(body),
+    });
     const data = await res.json();
     if (res.ok) {
-      const text = data.choices?.[0]?.message?.content;
+      const candidate = data.candidates?.[0];
+      if (!candidate) {
+        const blockReason = data.promptFeedback?.blockReason;
+        throw new Error(blockReason
+          ? "요청이 차단되었습니다: " + blockReason
+          : "응답에 후보가 없습니다.");
+      }
+      const { finishReason } = candidate;
+      if (finishReason && finishReason !== "STOP" && finishReason !== "MAX_TOKENS") {
+        throw new Error("생성이 중단되었습니다: " + finishReason);
+      }
+      const text = candidate.content?.parts?.[0]?.text;
       if (!text) throw new Error("응답에서 텍스트를 찾을 수 없습니다.");
       return text;
     }
-    if (res.status === 503 && i < retries - 1) {
-      await sleep(3000);
+    if ((res.status === 503 || res.status === 429) && i < retries - 1) {
+      const msg = data.error?.message || "";
+      const match = msg.match(/retry in ([\d.]+)s/i);
+      const wait = match ? Math.ceil(parseFloat(match[1])) * 1000 : 5000;
+      await sleep(wait);
       continue;
     }
-    throw new Error(data.error?.message || "OpenAI API 오류 (" + res.status + ")");
+    throw new Error(data.error?.message || "API 오류가 발생했습니다.");
   }
 }
 
