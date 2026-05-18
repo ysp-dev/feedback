@@ -181,20 +181,21 @@ async function runReply() {
     const body = {
       system_instruction: {
         parts: [{ text:
-          "당신은 전문적인 비즈니스 커뮤니케이션 전문가입니다. " +
-          "피드백을 주신 한 분께 드리는 답변 메시지를 작성합니다. " +
-          "메일 형식(수신자, 제목, 서명 등)이 아닌 자연스러운 답변글 형식으로 작성합니다."
+          "당신은 기업 비즈니스 커뮤니케이션 전문가입니다. " +
+          "경영진이 주신 피드백에 대한 격식체 답변을 작성합니다. " +
+          "전문적이고 정중하며 격식을 갖추되 군더더기 없이 간결하게, " +
+          "메일 서식(수신자·제목·서명) 없이 본문만 작성합니다."
         }]
       },
       contents: [{
         parts: [{ text:
-          "다음은 경영진 한 분이 주신 피드백입니다. 이 분께 드릴 정중하고 전문적인 답변글을 작성해주세요:\n\n" +
+          "다음 피드백에 대한 답변을 작성해주세요:\n\n" +
           feedbackText + "\n\n" +
           "작성 조건:\n" +
-          "- 메일 형식(수신자, 제목, 발신자 서명 등) 없이 답변 본문만 작성\n" +
-          "- 피드백 주신 분 한 분께 직접 드리는 말투\n" +
-          "- 감사함을 표현하고, 피드백 핵심에 직접 응답하며, 향후 개선 의지 포함\n" +
-          "- 답변 길이는 피드백 텍스트(" + feedbackText.length + "자)의 약 2배 분량으로 작성"
+          "- 격식체 존댓말, 전문적이고 정중한 어조\n" +
+          "- 구성: 감사 표현 → 피드백 핵심 수용 및 직접 응답 → 구체적 개선·실행 의지\n" +
+          "- 불필요한 반복·수식어 없이 간결하게 (피드백 길이의 1~1.5배 이내)\n" +
+          "- 본문만 작성 (메일 서식 없음)"
         }]
       }]
     };
@@ -205,6 +206,8 @@ async function runReply() {
     showError("reply-error", e.message);
   } finally {
     setLoading("reply", false);
+    const labelEl = document.querySelector(".reply-label");
+    if (labelEl) labelEl.textContent = "답변 생성";
   }
 }
 
@@ -367,7 +370,7 @@ function toggleApiSection() {
   }
 
   function reset(trigger) {
-    indicator.style.transform = "translateX(-50%) translateY(0)";
+    indicator.style.transform = "translateX(-50%) translateY(-60px)";
     indicator.style.opacity = 0;
     indicator.classList.remove("ptr-ready");
     active = false;
@@ -382,11 +385,11 @@ function toggleApiSection() {
   }, { passive: true });
 
   document.addEventListener("touchmove", e => {
-    if (!active || !atTop()) return;
+    if (!active) return;
     const delta = Math.max(0, e.touches[0].clientY - startY);
     maxDelta = Math.max(maxDelta, delta);
     const progress = Math.min(delta / THRESHOLD, 1);
-    indicator.style.transform = `translateX(-50%) translateY(${Math.min(delta * 0.5, 48)}px)`;
+    indicator.style.transform = `translateX(-50%) translateY(${(progress - 1) * 60}px)`;
     indicator.style.opacity = progress;
     indicator.classList.toggle("ptr-ready", delta >= THRESHOLD);
   }, { passive: true });
