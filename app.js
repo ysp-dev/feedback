@@ -252,25 +252,21 @@ async function callGemini(apiKey, body, statusEl) {
 
     const rawMsg = data.error?.message || "";
 
-    if (res.status === 429) {
-      if (detectRateLimitType(rawMsg) === "rpd") {
-        throw new Error("일일 API 한도 초과. 내일 다시 시도하세요.");
-      }
-      // RPM: 대기 없이 즉시 다음 모델로
-      lastError = new Error(rawMsg || "요청 한도 초과");
-      lastError.status = 429;
-      continue;
-    }
-
-    if (res.status === 503) {
-      lastError = new Error(rawMsg || "서버 오류");
-      lastError.status = 503;
-      continue;
+    if (res.status === 429 || res.status === 503) {
+      const limitType = res.status === 429 ? detectRateLimitType(rawMsg) : null;
+      const err = new Error(rawMsg || (res.status === 429 ? "요청 한도 초과" : "서버 오류"));
+      err.status = res.status;
+      err.limitType = limitType;
+      lastError = err;
+      continue; // RPD·RPM 구분 없이 항상 다음 모델로
     }
 
     throw new Error(rawMsg || "API 오류가 발생했습니다.");
   }
 
+  if (lastError?.limitType === "rpd") {
+    throw new Error("일일 API 한도 초과. 내일 다시 시도하세요.");
+  }
   throw lastError || new Error("모든 모델에서 오류가 발생했습니다.");
 }
 
