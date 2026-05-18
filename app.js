@@ -188,7 +188,7 @@ async function runReply() {
       }]
     };
 
-    const text = await callGemini(apiKey, body, document.getElementById("reply-error"));
+    const text = await callGemini(apiKey, body, document.querySelector(".reply-label"));
     document.getElementById("reply-text").value = text;
   } catch (e) {
     showError("reply-error", e.message);
@@ -237,11 +237,12 @@ async function callGemini(apiKey, body, statusEl, retries = 5) {
 }
 
 async function countdown(sec, statusEl) {
+  const original = statusEl ? statusEl.textContent : "";
   for (let s = sec; s > 0; s--) {
-    if (statusEl) statusEl.textContent = `요청 한도 초과 — ${s}초 후 재시도`;
+    if (statusEl) statusEl.textContent = `한도 초과 — ${s}초 후 재시도`;
     await sleep(1000);
   }
-  if (statusEl) statusEl.textContent = "";
+  if (statusEl) statusEl.textContent = original;
 }
 
 // --- Utils ---
