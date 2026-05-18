@@ -107,6 +107,9 @@ function closeCropModal() {
 
 document.getElementById("camera-input").addEventListener("change", e => handleFile(e.target.files[0]));
 document.getElementById("file-input").addEventListener("change", e => handleFile(e.target.files[0]));
+document.getElementById("ocr-text").addEventListener("input", () => {
+  document.getElementById("reply-btn").disabled = !document.getElementById("ocr-text").value.trim();
+});
 
 // --- OCR ---
 async function runOcr() {
