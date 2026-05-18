@@ -15,7 +15,7 @@ body {
 
 .ptr-indicator {
   position: fixed;
-  top: -48px;
+  top: calc(env(safe-area-inset-top, 0px) - 48px);
   left: 50%;
   transform: translateX(-50%);
   width: 36px;
