@@ -134,7 +134,7 @@ async function runOcr() {
     };
 
     setOcrStatus("텍스트 추출 중...");
-    const text = await callGemini(apiKey, body);
+    const text = await callGemini(apiKey, body, document.querySelector(".ocr-label"));
     document.getElementById("ocr-text").value = text;
     document.getElementById("reply-btn").disabled = false;
     setOcrStatus("");
@@ -188,7 +188,7 @@ async function runReply() {
       }]
     };
 
-    const text = await callGemini(apiKey, body);
+    const text = await callGemini(apiKey, body, document.getElementById("reply-error"));
     document.getElementById("reply-text").value = text;
   } catch (e) {
     showError("reply-error", e.message);
@@ -198,7 +198,7 @@ async function runReply() {
 }
 
 // --- Gemini API ---
-async function callGemini(apiKey, body, retries = 3) {
+async function callGemini(apiKey, body, statusEl, retries = 5) {
   for (let i = 0; i < retries; i++) {
     const res = await fetch(API_BASE, {
       method: "POST",
@@ -228,12 +228,20 @@ async function callGemini(apiKey, body, retries = 3) {
     if ((res.status === 503 || res.status === 429) && i < retries - 1) {
       const msg = data.error?.message || "";
       const match = msg.match(/retry in ([\d.]+)s/i);
-      const wait = match ? Math.ceil(parseFloat(match[1])) * 1000 : 5000;
-      await sleep(wait);
+      const waitSec = match ? Math.ceil(parseFloat(match[1])) : 5;
+      await countdown(waitSec, statusEl);
       continue;
     }
     throw new Error(data.error?.message || "API 오류가 발생했습니다.");
   }
+}
+
+async function countdown(sec, statusEl) {
+  for (let s = sec; s > 0; s--) {
+    if (statusEl) statusEl.textContent = `요청 한도 초과 — ${s}초 후 재시도`;
+    await sleep(1000);
+  }
+  if (statusEl) statusEl.textContent = "";
 }
 
 // --- Utils ---
