@@ -334,33 +334,40 @@ function toggleApiSection() {
   const THRESHOLD = 80;
   const indicator = document.getElementById("ptr-indicator");
   let startY = 0;
-  let active = false;
+  let pulling = false;
+
+  function scrollTop() {
+    return window.scrollY || document.documentElement.scrollTop || document.body.scrollTop;
+  }
 
   document.addEventListener("touchstart", e => {
-    if (window.scrollY === 0) {
+    if (scrollTop() === 0) {
       startY = e.touches[0].clientY;
-      active = true;
+      pulling = false;
     }
   }, { passive: true });
 
   document.addEventListener("touchmove", e => {
-    if (!active) return;
-    const delta = Math.max(0, e.touches[0].clientY - startY);
+    if (scrollTop() !== 0) return;
+    const delta = e.touches[0].clientY - startY;
+    if (delta <= 0) return;
+    pulling = true;
+    e.preventDefault();
     const progress = Math.min(delta / THRESHOLD, 1);
     const translateY = Math.min(delta * 0.5, 48);
     indicator.style.transform = `translateX(-50%) translateY(${translateY}px)`;
     indicator.style.opacity = progress;
     indicator.classList.toggle("ptr-ready", delta >= THRESHOLD);
-  }, { passive: true });
+  }, { passive: false });
 
   document.addEventListener("touchend", e => {
-    if (!active) return;
-    active = false;
+    if (!pulling) return;
+    pulling = false;
     const delta = e.changedTouches[0].clientY - startY;
     indicator.style.transform = "translateX(-50%) translateY(0)";
     indicator.style.opacity = 0;
     indicator.classList.remove("ptr-ready");
-    if (delta >= THRESHOLD && window.scrollY === 0) resetAll();
+    if (delta >= THRESHOLD) resetAll();
   });
 })();
 
