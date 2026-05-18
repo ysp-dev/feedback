@@ -239,8 +239,13 @@ async function callGemini(apiKey, body, retries = 3) {
       if (!text) throw new Error("응답에서 텍스트를 찾을 수 없습니다.");
       return text;
     }
-    if (res.status === 503 && i < retries - 1) {
-      await sleep(3000);
+    if ((res.status === 503 || res.status === 429) && i < retries - 1) {
+      const msg = data.error?.message || "";
+      const match = msg.match(/retry in ([\d.]+)s/i);
+      const wait = match ? Math.ceil(parseFloat(match[1])) * 1000 : 5000;
+      showError("ocr-error", `잠시 후 재시도 중... (${Math.ceil(wait/1000)}초)`);
+      document.getElementById("ocr-error").classList.remove("d-none");
+      await sleep(wait);
       continue;
     }
     throw new Error(data.error?.message || "API 오류가 발생했습니다.");
