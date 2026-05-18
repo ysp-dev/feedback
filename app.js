@@ -23,6 +23,32 @@ function saveKey(type) {
   if (!k) return alert("API 키를 입력해주세요.");
   localStorage.setItem(storageKey, k);
   updateKeyStatus(type + "-key-status", k);
+  if (type === "openai") testOpenAIKey(k);
+}
+
+async function testOpenAIKey(apiKey) {
+  if (!apiKey.startsWith("sk-")) {
+    document.getElementById("openai-key-status").innerHTML =
+      '<span style="color:#ef4444">키 형식 오류 (sk- 로 시작해야 함)</span>';
+    return;
+  }
+  const statusEl = document.getElementById("openai-key-status");
+  statusEl.innerHTML = '<span style="color:#6b7280">확인 중...</span>';
+  try {
+    const res = await fetch("https://api.openai.com/v1/models", {
+      mode: "cors",
+      credentials: "omit",
+      headers: { "Authorization": "Bearer " + apiKey }
+    });
+    if (res.ok) {
+      statusEl.innerHTML = '<span class="ok">저장됨 (' + apiKey.slice(0, 8) + '...) — 연결 OK</span>';
+    } else {
+      const data = await res.json();
+      statusEl.innerHTML = '<span style="color:#ef4444">오류: ' + (data.error?.message || res.status) + '</span>';
+    }
+  } catch (e) {
+    statusEl.innerHTML = '<span style="color:#ef4444">연결 실패: ' + e.message + '</span>';
+  }
 }
 
 function updateKeyStatus(statusId, k) {
@@ -225,14 +251,22 @@ async function callGemini(apiKey, body, retries = 3) {
 // --- OpenAI API (답변 생성용) ---
 async function callOpenAI(apiKey, body, retries = 3) {
   for (let i = 0; i < retries; i++) {
-    const res = await fetch(OPENAI_API_BASE, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + apiKey,
-      },
-      body: JSON.stringify(body),
-    });
+    let res;
+    try {
+      res = await fetch(OPENAI_API_BASE, {
+        method: "POST",
+        mode: "cors",
+        credentials: "omit",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + apiKey,
+        },
+        body: JSON.stringify(body),
+      });
+    } catch (netErr) {
+      if (i < retries - 1) { await sleep(2000); continue; }
+      throw new Error("네트워크 오류: OpenAI 서버에 연결할 수 없습니다. (" + netErr.message + ")");
+    }
     const data = await res.json();
     if (res.ok) {
       const text = data.choices?.[0]?.message?.content;
@@ -243,7 +277,7 @@ async function callOpenAI(apiKey, body, retries = 3) {
       await sleep(3000);
       continue;
     }
-    throw new Error(data.error?.message || "OpenAI API 오류가 발생했습니다.");
+    throw new Error(data.error?.message || "OpenAI API 오류 (" + res.status + ")");
   }
 }
 
