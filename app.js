@@ -208,21 +208,31 @@ async function runReply() {
 }
 
 // --- Gemini API ---
-async function callGemini(apiKey, body, statusEl, modelIdx = 0, retries = 3) {
-  if (modelIdx >= MODELS.length) throw new Error("모든 모델에서 오류가 발생했습니다.");
+function detectRateLimitType(rawMsg) {
+  const n = rawMsg.toLowerCase();
+  if (n.includes("per day") || n.includes("per_day") || n.includes("daily")) return "rpd";
+  return "rpm";
+}
 
-  const model = MODELS[modelIdx];
+async function callGemini(apiKey, body, statusEl) {
+  let lastError = null;
 
-  for (let i = 0; i < retries; i++) {
-    const res = await fetch(getApiBase(model), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey,
-      },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
+  for (let i = 0; i < MODELS.length; i++) {
+    const model = MODELS[i];
+    if (statusEl && i > 0) statusEl.textContent = model + " 시도 중...";
+
+    let res, data;
+    try {
+      res = await fetch(getApiBase(model), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+        body: JSON.stringify(body),
+      });
+      data = await res.json();
+    } catch (e) {
+      throw new Error("네트워크 연결을 확인하세요.");
+    }
+
     if (res.ok) {
       const candidate = data.candidates?.[0];
       if (!candidate) {
@@ -239,32 +249,29 @@ async function callGemini(apiKey, body, statusEl, modelIdx = 0, retries = 3) {
       if (!text) throw new Error("응답에서 텍스트를 찾을 수 없습니다.");
       return text;
     }
-    if (res.status === 503 || res.status === 429) {
-      if (i < retries - 1) {
-        const msg = data.error?.message || "";
-        const match = msg.match(/retry in ([\d.]+)s/i);
-        const waitSec = match ? Math.ceil(parseFloat(match[1])) : 5;
-        await countdown(waitSec, statusEl);
-        continue;
-      }
-      if (modelIdx + 1 < MODELS.length) {
-        const next = MODELS[modelIdx + 1];
-        if (statusEl) statusEl.textContent = next + "로 전환 중...";
-        return callGemini(apiKey, body, statusEl, modelIdx + 1, retries);
-      }
-    }
-    throw new Error(data.error?.message || "API 오류가 발생했습니다.");
-  }
-  throw new Error("재시도 횟수를 초과했습니다.");
-}
 
-async function countdown(sec, statusEl) {
-  const original = statusEl ? statusEl.textContent : "";
-  for (let s = sec; s > 0; s--) {
-    if (statusEl) statusEl.textContent = `한도 초과 — ${s}초 후 재시도`;
-    await sleep(1000);
+    const rawMsg = data.error?.message || "";
+
+    if (res.status === 429) {
+      if (detectRateLimitType(rawMsg) === "rpd") {
+        throw new Error("일일 API 한도 초과. 내일 다시 시도하세요.");
+      }
+      // RPM: 대기 없이 즉시 다음 모델로
+      lastError = new Error(rawMsg || "요청 한도 초과");
+      lastError.status = 429;
+      continue;
+    }
+
+    if (res.status === 503) {
+      lastError = new Error(rawMsg || "서버 오류");
+      lastError.status = 503;
+      continue;
+    }
+
+    throw new Error(rawMsg || "API 오류가 발생했습니다.");
   }
-  if (statusEl) statusEl.textContent = original;
+
+  throw lastError || new Error("모든 모델에서 오류가 발생했습니다.");
 }
 
 // --- Utils ---
@@ -277,7 +284,6 @@ function toBase64(file) {
   });
 }
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 function setLoading(type, on) {
   document.getElementById(type + "-btn").disabled = on;
