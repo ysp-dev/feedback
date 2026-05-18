@@ -131,6 +131,16 @@ body {
   transition: color .15s;
 }
 
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.dot-green { background: #22c55e; }
+.dot-red   { background: #ef4444; }
+.dot-gray  { background: #d1d5db; }
+
 .api-status {
   flex: 1;
   text-align: right;

@@ -14,19 +14,32 @@ function saveKey() {
   const k = document.getElementById("api-key-input").value.trim();
   if (!k) return alert("API 키를 입력해주세요.");
   localStorage.setItem(STORAGE_KEY, k);
-  updateKeyStatus(k);
-  collapseApiSection();
+  testKey(k);
+}
+
+async function testKey(apiKey) {
+  const el = document.getElementById("key-status");
+  el.innerHTML = '<span class="status-dot dot-gray"></span>';
+  try {
+    const res = await fetch(API_BASE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify({ contents: [{ parts: [{ text: "hi" }] }] })
+    });
+    if (res.ok) {
+      el.innerHTML = '<span class="status-dot dot-green"></span>';
+      collapseApiSection();
+    } else {
+      el.innerHTML = '<span class="status-dot dot-red"></span>';
+    }
+  } catch (e) {
+    el.innerHTML = '<span class="status-dot dot-red"></span>';
+  }
 }
 
 function updateKeyStatus(k) {
   const el = document.getElementById("key-status");
-  el.textContent = "";
-  if (k) {
-    const span = document.createElement("span");
-    span.className = "ok";
-    span.textContent = "저장됨 (" + k.slice(0, 8) + "...)";
-    el.appendChild(span);
-  }
+  el.innerHTML = k ? '<span class="status-dot dot-green"></span>' : "";
 }
 
 function toggleKey() {
