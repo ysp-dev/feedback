@@ -10,6 +10,12 @@
 <body>
 <div class="wrap">
 
+  <div id="file-protocol-banner" class="file-protocol-banner d-none">
+    OpenAI API는 <strong>file://</strong> 에서 차단됩니다.
+    터미널에서 <code>python3 -m http.server 8080</code> 실행 후
+    <strong>http://localhost:8080</strong> 으로 접속하세요.
+  </div>
+
   <header class="app-header">
     <h1 class="app-title">Feedback Reply</h1>
     <p class="app-sub">문서 촬영 · OCR · 전문 답변 자동 생성</p>
@@ -28,15 +34,21 @@
         <circle cx="7.5" cy="15.5" r="5.5"/>
         <path d="m21 2-9.6 9.6M15.5 7.5l2 2"/>
       </svg>
-      <span class="section-label">Gemini API Key</span>
-      <span id="key-status" class="status-text api-status"></span>
+      <span class="section-label">API Keys</span>
       <span id="api-chevron" class="api-chevron">−</span>
     </div>
     <div id="api-input-wrap">
+      <div class="api-key-label">Gemini API Key <span class="muted">— OCR</span> <span id="gemini-key-status" class="status-text api-status"></span></div>
       <div class="api-row">
-        <input id="api-key-input" type="password" class="input" placeholder="AIzaSy..." />
-        <button class="btn btn-ghost" onclick="saveKey()">저장</button>
-        <button class="btn-text" onclick="toggleKey()">표시/숨김</button>
+        <input id="gemini-key-input" type="password" class="input" placeholder="AIzaSy..." />
+        <button class="btn btn-ghost" onclick="saveKey('gemini')">저장</button>
+        <button class="btn-text" onclick="toggleKey('gemini')">표시/숨김</button>
+      </div>
+      <div class="api-key-label" style="margin-top:10px">OpenAI API Key <span class="muted">— 답변 생성</span> <span id="openai-key-status" class="status-text api-status"></span></div>
+      <div class="api-row">
+        <input id="openai-key-input" type="password" class="input" placeholder="sk-..." />
+        <button class="btn btn-ghost" onclick="saveKey('openai')">저장</button>
+        <button class="btn-text" onclick="toggleKey('openai')">표시/숨김</button>
       </div>
     </div>
   </section>

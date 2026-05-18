@@ -1,25 +1,32 @@
-const STORAGE_KEY = "gemini_api_key";
-const MODEL = "gemini-2.5-flash";
-const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent";
+const GEMINI_STORAGE_KEY = "gemini_api_key";
+const OPENAI_STORAGE_KEY = "openai_api_key";
+const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent";
+const OPENAI_API_BASE = "https://api.openai.com/v1/chat/completions";
+const OPENAI_MODEL = "gpt-4o";
 
 // --- API Key ---
 function loadKey() {
-  const k = localStorage.getItem(STORAGE_KEY) || "";
-  document.getElementById("api-key-input").value = k;
-  updateKeyStatus(k);
-  if (k) collapseApiSection();
+  const gemini = localStorage.getItem(GEMINI_STORAGE_KEY) || "";
+  const openai = localStorage.getItem(OPENAI_STORAGE_KEY) || "";
+  document.getElementById("gemini-key-input").value = gemini;
+  document.getElementById("openai-key-input").value = openai;
+  updateKeyStatus("gemini-key-status", gemini);
+  updateKeyStatus("openai-key-status", openai);
+  if (gemini && openai) collapseApiSection();
 }
 
-function saveKey() {
-  const k = document.getElementById("api-key-input").value.trim();
+function saveKey(type) {
+  const inputId = type + "-key-input";
+  const storageKey = type === "gemini" ? GEMINI_STORAGE_KEY : OPENAI_STORAGE_KEY;
+  const k = document.getElementById(inputId).value.trim();
   if (!k) return alert("API 키를 입력해주세요.");
-  localStorage.setItem(STORAGE_KEY, k);
-  updateKeyStatus(k);
-  collapseApiSection();
+  localStorage.setItem(storageKey, k);
+  updateKeyStatus(type + "-key-status", k);
 }
 
-function updateKeyStatus(k) {
-  const el = document.getElementById("key-status");
+function updateKeyStatus(statusId, k) {
+  const el = document.getElementById(statusId);
   el.textContent = "";
   if (k) {
     const span = document.createElement("span");
@@ -29,13 +36,17 @@ function updateKeyStatus(k) {
   }
 }
 
-function toggleKey() {
-  const el = document.getElementById("api-key-input");
+function toggleKey(type) {
+  const el = document.getElementById(type + "-key-input");
   el.type = el.type === "password" ? "text" : "password";
 }
 
-function getKey() {
-  return localStorage.getItem(STORAGE_KEY) || "";
+function getGeminiKey() {
+  return localStorage.getItem(GEMINI_STORAGE_KEY) || "";
+}
+
+function getOpenAIKey() {
+  return localStorage.getItem(OPENAI_STORAGE_KEY) || "";
 }
 
 // --- Image ---
@@ -97,8 +108,8 @@ document.getElementById("file-input").addEventListener("change", e => handleFile
 
 // --- OCR ---
 async function runOcr() {
-  const apiKey = getKey();
-  if (!apiKey) return alert("API 키를 먼저 저장해주세요.");
+  const apiKey = getGeminiKey();
+  if (!apiKey) return alert("Gemini API 키를 먼저 저장해주세요.");
   if (!selectedFile) return;
 
   setLoading("ocr", true);
@@ -121,7 +132,7 @@ async function runOcr() {
 
     const text = await callGemini(apiKey, body);
     document.getElementById("ocr-text").value = text;
-    document.getElementById("reply-btn").disabled = false;
+    document.getElementById("reply-btn").disabled = !getOpenAIKey();
   } catch (e) {
     showError("ocr-error", e.message);
   } finally {
@@ -131,8 +142,8 @@ async function runOcr() {
 
 // --- Reply ---
 async function runReply() {
-  const apiKey = getKey();
-  if (!apiKey) return alert("API 키를 먼저 저장해주세요.");
+  const apiKey = getOpenAIKey();
+  if (!apiKey) return alert("OpenAI API 키를 먼저 저장해주세요.");
 
   const feedbackText = document.getElementById("ocr-text").value.trim();
   if (!feedbackText) return;
@@ -143,27 +154,30 @@ async function runReply() {
 
   try {
     const body = {
-      system_instruction: {
-        parts: [{ text:
-          "당신은 전문적인 비즈니스 커뮤니케이션 전문가입니다. " +
-          "피드백을 주신 한 분께 드리는 답변 메시지를 작성합니다. " +
-          "메일 형식(수신자, 제목, 서명 등)이 아닌 자연스러운 답변글 형식으로 작성합니다."
-        }]
-      },
-      contents: [{
-        parts: [{ text:
-          "다음은 경영진 한 분이 주신 피드백입니다. 이 분께 드릴 정중하고 전문적인 답변글을 작성해주세요:\n\n" +
-          feedbackText + "\n\n" +
-          "작성 조건:\n" +
-          "- 메일 형식(수신자, 제목, 발신자 서명 등) 없이 답변 본문만 작성\n" +
-          "- 피드백 주신 분 한 분께 직접 드리는 말투\n" +
-          "- 감사함을 표현하고, 피드백 핵심에 직접 응답하며, 향후 개선 의지 포함\n" +
-          "- 답변 길이는 피드백 텍스트(" + feedbackText.length + "자)와 비슷한 수준"
-        }]
-      }]
+      model: OPENAI_MODEL,
+      messages: [
+        {
+          role: "system",
+          content:
+            "당신은 전문적인 비즈니스 커뮤니케이션 전문가입니다. " +
+            "피드백을 주신 한 분께 드리는 답변 메시지를 작성합니다. " +
+            "메일 형식(수신자, 제목, 서명 등)이 아닌 자연스러운 답변글 형식으로 작성합니다."
+        },
+        {
+          role: "user",
+          content:
+            "다음은 경영진 한 분이 주신 피드백입니다. 이 분께 드릴 정중하고 전문적인 답변글을 작성해주세요:\n\n" +
+            feedbackText + "\n\n" +
+            "작성 조건:\n" +
+            "- 메일 형식(수신자, 제목, 발신자 서명 등) 없이 답변 본문만 작성\n" +
+            "- 피드백 주신 분 한 분께 직접 드리는 말투\n" +
+            "- 감사함을 표현하고, 피드백 핵심에 직접 응답하며, 향후 개선 의지 포함\n" +
+            "- 답변 길이는 피드백 텍스트(" + feedbackText.length + "자)와 비슷한 수준"
+        }
+      ]
     };
 
-    const text = await callGemini(apiKey, body);
+    const text = await callOpenAI(apiKey, body);
     document.getElementById("reply-text").value = text;
   } catch (e) {
     showError("reply-error", e.message);
@@ -172,10 +186,10 @@ async function runReply() {
   }
 }
 
-// --- Gemini API (재시도 포함) ---
+// --- Gemini API (OCR용, 재시도 포함) ---
 async function callGemini(apiKey, body, retries = 3) {
   for (let i = 0; i < retries; i++) {
-    const res = await fetch(API_BASE, {
+    const res = await fetch(GEMINI_API_BASE, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -205,6 +219,31 @@ async function callGemini(apiKey, body, retries = 3) {
       continue;
     }
     throw new Error(data.error?.message || "API 오류가 발생했습니다.");
+  }
+}
+
+// --- OpenAI API (답변 생성용) ---
+async function callOpenAI(apiKey, body, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    const res = await fetch(OPENAI_API_BASE, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + apiKey,
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      const text = data.choices?.[0]?.message?.content;
+      if (!text) throw new Error("응답에서 텍스트를 찾을 수 없습니다.");
+      return text;
+    }
+    if (res.status === 503 && i < retries - 1) {
+      await sleep(3000);
+      continue;
+    }
+    throw new Error(data.error?.message || "OpenAI API 오류가 발생했습니다.");
   }
 }
 
@@ -293,5 +332,14 @@ function toggleApiSection() {
   wrap.classList.contains("d-none") ? expandApiSection() : collapseApiSection();
 }
 
+// --- file:// 경고 ---
+function checkProtocol() {
+  if (location.protocol === "file:") {
+    const banner = document.getElementById("file-protocol-banner");
+    if (banner) banner.classList.remove("d-none");
+  }
+}
+
 // init
 loadKey();
+checkProtocol();
