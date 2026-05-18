@@ -20,7 +20,13 @@ function saveKey() {
 
 function updateKeyStatus(k) {
   const el = document.getElementById("key-status");
-  el.innerHTML = k ? '<span class="ok">저장됨 (' + k.slice(0, 8) + "...)</span>" : "";
+  el.textContent = "";
+  if (k) {
+    const span = document.createElement("span");
+    span.className = "ok";
+    span.textContent = "저장됨 (" + k.slice(0, 8) + "...)";
+    el.appendChild(span);
+  }
 }
 
 function toggleKey() {
@@ -76,6 +82,8 @@ function rotateCrop(deg) {
 }
 
 function cancelCrop() {
+  document.getElementById("camera-input").value = "";
+  document.getElementById("file-input").value = "";
   closeCropModal();
 }
 
@@ -167,13 +175,31 @@ async function runReply() {
 // --- Gemini API (재시도 포함) ---
 async function callGemini(apiKey, body, retries = 3) {
   for (let i = 0; i < retries; i++) {
-    const res = await fetch(`${API_BASE}?key=${apiKey}`, {
+    const res = await fetch(API_BASE, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
       body: JSON.stringify(body),
     });
     const data = await res.json();
-    if (res.ok) return data.candidates[0].content.parts[0].text;
+    if (res.ok) {
+      const candidate = data.candidates?.[0];
+      if (!candidate) {
+        const blockReason = data.promptFeedback?.blockReason;
+        throw new Error(blockReason
+          ? "요청이 차단되었습니다: " + blockReason
+          : "응답에 후보가 없습니다.");
+      }
+      const { finishReason } = candidate;
+      if (finishReason && finishReason !== "STOP" && finishReason !== "MAX_TOKENS") {
+        throw new Error("생성이 중단되었습니다: " + finishReason);
+      }
+      const text = candidate.content?.parts?.[0]?.text;
+      if (!text) throw new Error("응답에서 텍스트를 찾을 수 없습니다.");
+      return text;
+    }
     if (res.status === 503 && i < retries - 1) {
       await sleep(3000);
       continue;
@@ -208,11 +234,33 @@ function showError(id, msg) {
 async function copyReply() {
   const text = document.getElementById("reply-text").value;
   if (!text) return;
-  await navigator.clipboard.writeText(text);
   const btn = document.getElementById("copy-btn");
-  btn.textContent = "✓ 복사 완료!";
-  btn.classList.add("copied");
-  setTimeout(() => { btn.textContent = "클립보드 복사"; btn.classList.remove("copied"); }, 2000);
+
+  const markSuccess = () => {
+    btn.textContent = "✓ 복사 완료!";
+    btn.classList.add("copied");
+    setTimeout(() => { btn.textContent = "클립보드 복사"; btn.classList.remove("copied"); }, 2000);
+  };
+
+  try {
+    await navigator.clipboard.writeText(text);
+    markSuccess();
+  } catch {
+    // clipboard API 미지원 환경 fallback
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.cssText = "position:fixed;opacity:0;pointer-events:none";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    if (ok) {
+      markSuccess();
+    } else {
+      btn.textContent = "복사 실패 — 직접 선택하세요";
+      setTimeout(() => { btn.textContent = "클립보드 복사"; }, 3000);
+    }
+  }
 }
 
 // --- Reset ---
