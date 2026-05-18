@@ -34,18 +34,54 @@ function getKey() {
 
 // --- Image ---
 let selectedFile = null;
+let cropper = null;
 
 function handleFile(file) {
   if (!file) return;
-  selectedFile = file;
+  openCropModal(file);
+}
+
+// --- Crop ---
+function openCropModal(file) {
   const reader = new FileReader();
   reader.onload = e => {
-    const img = document.getElementById("preview-img");
+    const img = document.getElementById("crop-img");
     img.src = e.target.result;
-    img.style.display = "block";
+    document.getElementById("crop-modal").classList.remove("d-none");
+    if (cropper) { cropper.destroy(); cropper = null; }
+    cropper = new Cropper(img, {
+      viewMode: 1,
+      autoCropArea: 0.85,
+      highlight: false,
+    });
   };
   reader.readAsDataURL(file);
-  document.getElementById("ocr-btn").disabled = false;
+}
+
+function applyCrop() {
+  if (!cropper) return;
+  cropper.getCroppedCanvas({ maxWidth: 2048, maxHeight: 2048 })
+    .toBlob(blob => {
+      selectedFile = new File([blob], "cropped.jpg", { type: "image/jpeg" });
+      const img = document.getElementById("preview-img");
+      img.src = URL.createObjectURL(blob);
+      img.style.display = "block";
+      document.getElementById("ocr-btn").disabled = false;
+      closeCropModal();
+    }, "image/jpeg", 0.92);
+}
+
+function rotateCrop(deg) {
+  if (cropper) cropper.rotate(deg);
+}
+
+function cancelCrop() {
+  closeCropModal();
+}
+
+function closeCropModal() {
+  document.getElementById("crop-modal").classList.add("d-none");
+  if (cropper) { cropper.destroy(); cropper = null; }
 }
 
 document.getElementById("camera-input").addEventListener("change", e => handleFile(e.target.files[0]));

@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>Feedback Reply</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -101,6 +102,25 @@
   </section>
 
 </div>
+<!-- Crop Modal -->
+<div id="crop-modal" class="crop-modal d-none">
+  <div class="crop-header">
+    <span>이미지 크롭</span>
+    <div class="crop-rotate">
+      <button class="btn-text" onclick="rotateCrop(-90)">↺ 좌회전</button>
+      <button class="btn-text" onclick="rotateCrop(90)">↻ 우회전</button>
+    </div>
+  </div>
+  <div class="crop-container">
+    <img id="crop-img" alt="" />
+  </div>
+  <div class="crop-actions">
+    <button class="btn btn-ghost" onclick="cancelCrop()">취소</button>
+    <button class="btn btn-solid" onclick="applyCrop()">적용</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
