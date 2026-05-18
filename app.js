@@ -331,44 +331,43 @@ function toggleApiSection() {
 
 // --- Pull to refresh ---
 (function () {
-  const THRESHOLD = 80;
+  const THRESHOLD = 70;
   const indicator = document.getElementById("ptr-indicator");
   let startY = 0;
-  let pulling = false;
+  let maxDelta = 0;
+  let active = false;
 
-  function scrollTop() {
-    return window.scrollY || document.documentElement.scrollTop || document.body.scrollTop;
+  function atTop() {
+    return (window.scrollY || document.documentElement.scrollTop || document.body.scrollTop) === 0;
   }
 
-  document.addEventListener("touchstart", e => {
-    if (scrollTop() === 0) {
-      startY = e.touches[0].clientY;
-      pulling = false;
-    }
-  }, { passive: true });
-
-  document.addEventListener("touchmove", e => {
-    if (scrollTop() !== 0) return;
-    const delta = e.touches[0].clientY - startY;
-    if (delta <= 0) return;
-    pulling = true;
-    e.preventDefault();
-    const progress = Math.min(delta / THRESHOLD, 1);
-    const translateY = Math.min(delta * 0.5, 48);
-    indicator.style.transform = `translateX(-50%) translateY(${translateY}px)`;
-    indicator.style.opacity = progress;
-    indicator.classList.toggle("ptr-ready", delta >= THRESHOLD);
-  }, { passive: false });
-
-  document.addEventListener("touchend", e => {
-    if (!pulling) return;
-    pulling = false;
-    const delta = e.changedTouches[0].clientY - startY;
+  function reset(trigger) {
     indicator.style.transform = "translateX(-50%) translateY(0)";
     indicator.style.opacity = 0;
     indicator.classList.remove("ptr-ready");
-    if (delta >= THRESHOLD) resetAll();
-  });
+    active = false;
+    if (trigger) resetAll();
+  }
+
+  document.addEventListener("touchstart", e => {
+    if (!atTop()) return;
+    startY = e.touches[0].clientY;
+    maxDelta = 0;
+    active = true;
+  }, { passive: true });
+
+  document.addEventListener("touchmove", e => {
+    if (!active || !atTop()) return;
+    const delta = Math.max(0, e.touches[0].clientY - startY);
+    maxDelta = Math.max(maxDelta, delta);
+    const progress = Math.min(delta / THRESHOLD, 1);
+    indicator.style.transform = `translateX(-50%) translateY(${Math.min(delta * 0.5, 48)}px)`;
+    indicator.style.opacity = progress;
+    indicator.classList.toggle("ptr-ready", delta >= THRESHOLD);
+  }, { passive: true });
+
+  document.addEventListener("touchend", () => reset(active && maxDelta >= THRESHOLD));
+  document.addEventListener("touchcancel", () => reset(false));
 })();
 
 // init
