@@ -2,8 +2,8 @@ const GEMINI_STORAGE_KEY = "gemini_api_key";
 const OPENAI_STORAGE_KEY = "openai_api_key";
 const GEMINI_MODEL = "gemini-2.5-flash";
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent";
-const OPENAI_API_BASE = "https://api.openai.com/v1/chat/completions";
-const OPENAI_MODEL = "gpt-4o";
+const OPENAI_API_BASE = "https://api.openai.com/v1/responses";
+const OPENAI_MODEL = "gpt-4.1";
 
 // --- API Key ---
 function loadKey() {
@@ -188,26 +188,18 @@ async function runReply() {
   try {
     const body = {
       model: OPENAI_MODEL,
-      messages: [
-        {
-          role: "system",
-          content:
-            "당신은 전문적인 비즈니스 커뮤니케이션 전문가입니다. " +
-            "피드백을 주신 한 분께 드리는 답변 메시지를 작성합니다. " +
-            "메일 형식(수신자, 제목, 서명 등)이 아닌 자연스러운 답변글 형식으로 작성합니다."
-        },
-        {
-          role: "user",
-          content:
-            "다음은 경영진 한 분이 주신 피드백입니다. 이 분께 드릴 정중하고 전문적인 답변글을 작성해주세요:\n\n" +
-            feedbackText + "\n\n" +
-            "작성 조건:\n" +
-            "- 메일 형식(수신자, 제목, 발신자 서명 등) 없이 답변 본문만 작성\n" +
-            "- 피드백 주신 분 한 분께 직접 드리는 말투\n" +
-            "- 감사함을 표현하고, 피드백 핵심에 직접 응답하며, 향후 개선 의지 포함\n" +
-            "- 답변 길이는 피드백 텍스트(" + feedbackText.length + "자)와 비슷한 수준"
-        }
-      ]
+      instructions:
+        "당신은 전문적인 비즈니스 커뮤니케이션 전문가입니다. " +
+        "피드백을 주신 한 분께 드리는 답변 메시지를 작성합니다. " +
+        "메일 형식(수신자, 제목, 서명 등)이 아닌 자연스러운 답변글 형식으로 작성합니다.",
+      input:
+        "다음은 경영진 한 분이 주신 피드백입니다. 이 분께 드릴 정중하고 전문적인 답변글을 작성해주세요:\n\n" +
+        feedbackText + "\n\n" +
+        "작성 조건:\n" +
+        "- 메일 형식(수신자, 제목, 발신자 서명 등) 없이 답변 본문만 작성\n" +
+        "- 피드백 주신 분 한 분께 직접 드리는 말투\n" +
+        "- 감사함을 표현하고, 피드백 핵심에 직접 응답하며, 향후 개선 의지 포함\n" +
+        "- 답변 길이는 피드백 텍스트(" + feedbackText.length + "자)와 비슷한 수준"
     };
 
     const text = await callOpenAI(apiKey, body);
@@ -276,7 +268,7 @@ async function callOpenAI(apiKey, body, retries = 3) {
     }
     const data = await res.json();
     if (res.ok) {
-      const text = data.choices?.[0]?.message?.content;
+      const text = data.output?.[0]?.content?.[0]?.text;
       if (!text) throw new Error("응답에서 텍스트를 찾을 수 없습니다.");
       return text;
     }
