@@ -1,6 +1,13 @@
 const STORAGE_KEY = "gemini_api_key";
-const MODEL = "gemini-2.5-flash";
-const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent";
+const MODELS = [
+  "gemini-2.5-pro",
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+];
+
+function getApiBase(model) {
+  return "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent";
+}
 
 // --- API Key ---
 function loadKey() {
@@ -21,7 +28,7 @@ async function testKey(apiKey) {
   const el = document.getElementById("key-status");
   el.innerHTML = '<span class="status-dot dot-gray"></span>';
   try {
-    const res = await fetch(API_BASE, {
+    const res = await fetch(getApiBase(MODELS[0]), {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({ contents: [{ parts: [{ text: "hi" }] }] })
@@ -201,9 +208,13 @@ async function runReply() {
 }
 
 // --- Gemini API ---
-async function callGemini(apiKey, body, statusEl, retries = 5) {
+async function callGemini(apiKey, body, statusEl, modelIdx = 0, retries = 3) {
+  if (modelIdx >= MODELS.length) throw new Error("모든 모델에서 오류가 발생했습니다.");
+
+  const model = MODELS[modelIdx];
+
   for (let i = 0; i < retries; i++) {
-    const res = await fetch(API_BASE, {
+    const res = await fetch(getApiBase(model), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -228,15 +239,23 @@ async function callGemini(apiKey, body, statusEl, retries = 5) {
       if (!text) throw new Error("응답에서 텍스트를 찾을 수 없습니다.");
       return text;
     }
-    if ((res.status === 503 || res.status === 429) && i < retries - 1) {
-      const msg = data.error?.message || "";
-      const match = msg.match(/retry in ([\d.]+)s/i);
-      const waitSec = match ? Math.ceil(parseFloat(match[1])) : 5;
-      await countdown(waitSec, statusEl);
-      continue;
+    if (res.status === 503 || res.status === 429) {
+      if (i < retries - 1) {
+        const msg = data.error?.message || "";
+        const match = msg.match(/retry in ([\d.]+)s/i);
+        const waitSec = match ? Math.ceil(parseFloat(match[1])) : 5;
+        await countdown(waitSec, statusEl);
+        continue;
+      }
+      if (modelIdx + 1 < MODELS.length) {
+        const next = MODELS[modelIdx + 1];
+        if (statusEl) statusEl.textContent = next + "로 전환 중...";
+        return callGemini(apiKey, body, statusEl, modelIdx + 1, retries);
+      }
     }
     throw new Error(data.error?.message || "API 오류가 발생했습니다.");
   }
+  throw new Error("재시도 횟수를 초과했습니다.");
 }
 
 async function countdown(sec, statusEl) {
