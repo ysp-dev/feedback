@@ -1,0 +1,280 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.d-none { display: none !important; }
+
+body {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 300;
+  color: #000;
+  background: #fff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Layout ── */
+.wrap {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 0 1.5rem 2.5rem;
+}
+
+/* ── Header ── */
+.app-header {
+  text-align: center;
+  padding: .9rem 0;
+  border-top: 1px solid #000;
+  border-bottom: 1px solid #000;
+  margin-top: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.app-title {
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: #000;
+}
+
+.app-sub {
+  font-size: 11px;
+  color: #9ca3af;
+  letter-spacing: .08em;
+  margin-top: .3rem;
+}
+
+/* ── Dividers ── */
+.divider {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 1.25rem 0;
+}
+
+/* ── Sections ── */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: .65rem;
+}
+
+.section-label {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+
+/* ── Step header ── */
+.step-header {
+  display: flex;
+  align-items: baseline;
+  gap: .8rem;
+}
+
+.step-num {
+  font-size: 10px;
+  font-weight: 400;
+  color: #9ca3af;
+  letter-spacing: .05em;
+  flex-shrink: 0;
+}
+
+.step-title {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #000;
+}
+
+.step-title .muted {
+  color: #9ca3af;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 10px;
+}
+
+/* ── API header / toggle ── */
+.api-header {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.key-icon {
+  color: #9ca3af;
+  flex-shrink: 0;
+  transition: color .15s;
+}
+
+.api-status {
+  flex: 1;
+  text-align: right;
+  margin-right: .2rem;
+}
+
+.api-chevron {
+  font-size: 14px;
+  color: #9ca3af;
+  font-weight: 300;
+  transition: color .15s;
+  width: 10px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.api-header:hover .key-icon,
+.api-header:hover .api-chevron { color: #000; }
+
+#api-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+/* ── API row ── */
+.api-row {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+}
+
+.api-row .input { flex: 1; min-width: 0; }
+
+/* ── Upload row ── */
+.upload-row {
+  display: flex;
+  gap: .6rem;
+}
+
+.upload-row label {
+  flex: 1;
+  text-align: center;
+  cursor: pointer;
+}
+
+/* ── Preview ── */
+#preview-img {
+  display: none;
+  width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  border: 1px solid #e5e7eb;
+}
+
+/* ── Input / Textarea ── */
+.input,
+.textarea {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 300;
+  color: #000;
+  background: #fff;
+  border: 1px solid #9ca3af;
+  border-radius: 0;
+  padding: .45rem .65rem;
+  width: 100%;
+  outline: none;
+  transition: border-color .15s;
+  -webkit-appearance: none;
+}
+
+.input:focus,
+.textarea:focus { border-color: #000; }
+
+.input::placeholder,
+.textarea::placeholder { color: #d1d5db; font-weight: 300; }
+
+.textarea { resize: vertical; line-height: 1.65; }
+
+/* ── Buttons ── */
+.btn {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: .5rem .9rem;
+  border-radius: 0;
+  transition: background .15s, color .15s, border-color .15s, opacity .15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  white-space: nowrap;
+  -webkit-appearance: none;
+  width: auto;
+}
+
+.btn:disabled { opacity: .28; cursor: not-allowed; }
+
+.btn-solid {
+  background: #000;
+  color: #fff;
+  border: 1px solid #000;
+}
+.btn-solid:hover:not(:disabled) { background: #222; }
+
+.btn-outline {
+  background: #fff;
+  color: #000;
+  border: 1px solid #000;
+}
+.btn-outline:hover:not(:disabled) { background: #f9fafb; }
+.btn-outline.copied { color: #9ca3af; border-color: #9ca3af; }
+
+.btn-ghost {
+  background: #fff;
+  color: #000;
+  border: 1px solid #e5e7eb;
+}
+.btn-ghost:hover:not(:disabled) { border-color: #9ca3af; }
+
+.btn-text {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  color: #9ca3af;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color .15s;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+.btn-text:hover { color: #000; }
+
+.w-full { width: 100%; }
+
+/* ── Spinner ── */
+.spinner {
+  width: 11px;
+  height: 11px;
+  border: 1px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Status / Error ── */
+.status-text { font-size: 11px; color: #9ca3af; }
+.status-text .ok { color: #000; }
+
+.error-msg {
+  font-size: 12px;
+  color: #000;
+  padding: .45rem .65rem;
+  border: 1px solid #000;
+  line-height: 1.5;
+  letter-spacing: .01em;
+}

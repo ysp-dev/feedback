@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Feedback Reply</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="wrap">
+
+  <header class="app-header">
+    <h1 class="app-title">Feedback Reply</h1>
+    <p class="app-sub">문서 촬영 · OCR · 전문 답변 자동 생성</p>
+  </header>
+
+  <!-- API Key -->
+  <section class="section">
+    <div class="api-header" onclick="toggleApiSection()">
+      <svg class="key-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="7.5" cy="15.5" r="5.5"/>
+        <path d="m21 2-9.6 9.6M15.5 7.5l2 2"/>
+      </svg>
+      <span class="section-label">Gemini API Key</span>
+      <span id="key-status" class="status-text api-status"></span>
+      <span id="api-chevron" class="api-chevron">−</span>
+    </div>
+    <div id="api-input-wrap">
+      <div class="api-row">
+        <input id="api-key-input" type="password" class="input" placeholder="AIzaSy..." />
+        <button class="btn btn-ghost" onclick="saveKey()">저장</button>
+        <button class="btn-text" onclick="toggleKey()">표시/숨김</button>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- Step 1 -->
+  <section class="section">
+    <div class="step-header">
+      <span class="step-num">01</span>
+      <span class="step-title">문서 촬영 / 업로드</span>
+    </div>
+    <div class="upload-row">
+      <label class="btn btn-outline">
+        카메라 촬영
+        <input id="camera-input" type="file" accept="image/*" capture="environment" style="display:none" />
+      </label>
+      <label class="btn btn-ghost">
+        파일 선택
+        <input id="file-input" type="file" accept="image/*" style="display:none" />
+      </label>
+    </div>
+    <div>
+      <img id="preview-img" alt="" />
+    </div>
+    <button id="ocr-btn" class="btn btn-solid w-full" disabled onclick="runOcr()">
+      <span id="ocr-spinner" class="spinner d-none"></span>
+      OCR 분석
+    </button>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- Step 2 -->
+  <section class="section">
+    <div class="step-header">
+      <span class="step-num">02</span>
+      <span class="step-title">추출된 텍스트 <span class="muted">— 수정 가능</span></span>
+    </div>
+    <textarea id="ocr-text" class="textarea" rows="8"
+      placeholder="OCR 결과가 여기에 표시됩니다."></textarea>
+    <div id="ocr-error" class="error-msg d-none"></div>
+    <button id="reply-btn" class="btn btn-solid w-full" disabled onclick="runReply()">
+      <span id="reply-spinner" class="spinner d-none"></span>
+      답변 생성
+    </button>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- Step 3 -->
+  <section class="section">
+    <div class="step-header">
+      <span class="step-num">03</span>
+      <span class="step-title">생성된 답변</span>
+    </div>
+    <textarea id="reply-text" class="textarea" rows="10"
+      placeholder="생성된 답변이 여기에 표시됩니다."></textarea>
+    <div id="reply-error" class="error-msg d-none"></div>
+    <button id="copy-btn" class="btn btn-outline w-full" onclick="copyReply()">
+      클립보드 복사
+    </button>
+  </section>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>
