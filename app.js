@@ -1,6 +1,6 @@
 const STORAGE_KEY = "openai_api_key";
 const API_BASE = "https://api.openai.com/v1/chat/completions";
-const MODEL = "gpt-4o";
+const MODEL = "gpt-5.5";
 
 // --- API Key ---
 function loadKey() {
