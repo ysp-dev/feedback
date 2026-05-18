@@ -328,14 +328,5 @@ function toggleApiSection() {
   wrap.classList.contains("d-none") ? expandApiSection() : collapseApiSection();
 }
 
-// --- file:// 경고 ---
-function checkProtocol() {
-  if (location.protocol === "file:") {
-    const banner = document.getElementById("file-protocol-banner");
-    if (banner) banner.classList.remove("d-none");
-  }
-}
-
 // init
 loadKey();
-checkProtocol();
