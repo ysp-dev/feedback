@@ -397,6 +397,15 @@ body {
 
 .crop-actions .btn { flex: 1; }
 
+/* ── Cropper.js: 나머지 꼭지점도 se(20×20)와 동일하게 ── */
+.cropper-point.point-ne,
+.cropper-point.point-nw,
+.cropper-point.point-sw {
+  width: 15px !important;
+  height: 15px !important;
+  opacity: 1 !important;
+}
+
 /* ── Status / Error ── */
 .status-text { font-size: 11px; color: #9ca3af; }
 .status-text .ok { color: #000; }
