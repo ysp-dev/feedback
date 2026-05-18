@@ -79,7 +79,7 @@ function openCropModal(file) {
 
 function applyCrop() {
   if (!cropper) return;
-  cropper.getCroppedCanvas({ maxWidth: 2048, maxHeight: 2048 })
+  cropper.getCroppedCanvas({ maxWidth: 1400, maxHeight: 1400 })
     .toBlob(blob => {
       selectedFile = new File([blob], "cropped.jpg", { type: "image/jpeg" });
       const img = document.getElementById("preview-img");
@@ -87,7 +87,7 @@ function applyCrop() {
       img.style.display = "block";
       document.getElementById("ocr-btn").disabled = false;
       closeCropModal();
-    }, "image/jpeg", 0.92);
+    }, "image/jpeg", 0.82);
 }
 
 function rotateCrop(deg) {
@@ -115,6 +115,7 @@ async function runOcr() {
   if (!selectedFile) return;
 
   setLoading("ocr", true);
+  setOcrStatus("이미지 분석 중...");
   document.getElementById("ocr-error").classList.add("d-none");
   document.getElementById("ocr-text").value = "";
   document.getElementById("reply-btn").disabled = true;
@@ -132,14 +133,25 @@ async function runOcr() {
       }]
     };
 
+    setOcrStatus("텍스트 추출 중...");
     const text = await callGemini(apiKey, body);
     document.getElementById("ocr-text").value = text;
     document.getElementById("reply-btn").disabled = false;
+    setOcrStatus("");
   } catch (e) {
     showError("ocr-error", e.message);
+    setOcrStatus("");
   } finally {
     setLoading("ocr", false);
   }
+}
+
+function setOcrStatus(msg) {
+  const btn = document.getElementById("ocr-btn");
+  btn.dataset.label = btn.dataset.label || "OCR 분석";
+  const spinner = document.getElementById("ocr-spinner");
+  const labelEl = btn.querySelector(".ocr-label");
+  if (labelEl) labelEl.textContent = msg || "OCR 분석";
 }
 
 // --- Reply ---
