@@ -34,21 +34,15 @@
         <circle cx="7.5" cy="15.5" r="5.5"/>
         <path d="m21 2-9.6 9.6M15.5 7.5l2 2"/>
       </svg>
-      <span class="section-label">API Keys</span>
+      <span class="section-label">OpenAI API Key</span>
+      <span id="key-status" class="status-text api-status"></span>
       <span id="api-chevron" class="api-chevron">−</span>
     </div>
     <div id="api-input-wrap">
-      <div class="api-key-label">Gemini API Key <span class="muted">— OCR</span> <span id="gemini-key-status" class="status-text api-status"></span></div>
       <div class="api-row">
-        <input id="gemini-key-input" type="password" class="input" placeholder="AIzaSy..." />
-        <button class="btn btn-ghost" onclick="saveKey('gemini')">저장</button>
-        <button class="btn-text" onclick="toggleKey('gemini')">표시/숨김</button>
-      </div>
-      <div class="api-key-label" style="margin-top:10px">OpenAI API Key <span class="muted">— 답변 생성</span> <span id="openai-key-status" class="status-text api-status"></span></div>
-      <div class="api-row">
-        <input id="openai-key-input" type="password" class="input" placeholder="sk-..." />
-        <button class="btn btn-ghost" onclick="saveKey('openai')">저장</button>
-        <button class="btn-text" onclick="toggleKey('openai')">표시/숨김</button>
+        <input id="api-key-input" type="password" class="input" placeholder="sk-..." />
+        <button class="btn btn-ghost" onclick="saveKey()">저장</button>
+        <button class="btn-text" onclick="toggleKey()">표시/숨김</button>
       </div>
     </div>
   </section>

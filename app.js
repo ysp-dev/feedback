@@ -1,46 +1,32 @@
-const GEMINI_STORAGE_KEY = "gemini_api_key";
-const OPENAI_STORAGE_KEY = "openai_api_key";
-const GEMINI_MODEL = "gemini-2.5-flash";
-const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent";
-const OPENAI_API_BASE = "https://api.openai.com/v1/responses";
-const OPENAI_MODEL = "gpt-4.1";
+const STORAGE_KEY = "openai_api_key";
+const API_BASE = "https://api.openai.com/v1/chat/completions";
+const MODEL = "gpt-4o";
 
 // --- API Key ---
 function loadKey() {
-  const gemini = localStorage.getItem(GEMINI_STORAGE_KEY) || "";
-  const openai = localStorage.getItem(OPENAI_STORAGE_KEY) || "";
-  document.getElementById("gemini-key-input").value = gemini;
-  document.getElementById("openai-key-input").value = openai;
-  updateKeyStatus("gemini-key-status", gemini);
-  updateKeyStatus("openai-key-status", openai);
-  if (gemini && openai) collapseApiSection();
+  const k = localStorage.getItem(STORAGE_KEY) || "";
+  document.getElementById("api-key-input").value = k;
+  updateKeyStatus(k);
+  if (k) collapseApiSection();
 }
 
-function saveKey(type) {
-  const inputId = type + "-key-input";
-  const storageKey = type === "gemini" ? GEMINI_STORAGE_KEY : OPENAI_STORAGE_KEY;
-  const k = document.getElementById(inputId).value
-    .replace(/[\s​‌‍﻿]/g, "");
+function saveKey() {
+  const raw = document.getElementById("api-key-input").value;
+  const k = raw.replace(/[\s​‌‍﻿]/g, "");
   if (!k) return alert("API 키를 입력해주세요.");
-  localStorage.setItem(storageKey, k);
-  updateKeyStatus(type + "-key-status", k);
-  if (type === "openai") testOpenAIKey(k);
+  localStorage.setItem(STORAGE_KEY, k);
+  testKey(k);
 }
 
-async function testOpenAIKey(apiKey) {
-  const statusEl = document.getElementById("openai-key-status");
-
-  // 1단계: 도메인 접근 가능 여부 (no-cors = CORS 없이 단순 연결 확인)
-  statusEl.innerHTML = '<span style="color:#6b7280">도메인 확인 중...</span>';
+async function testKey(apiKey) {
+  const statusEl = document.getElementById("key-status");
+  statusEl.innerHTML = '<span style="color:#6b7280">확인 중...</span>';
   try {
     await fetch("https://api.openai.com", { mode: "no-cors" });
   } catch (e) {
-    statusEl.innerHTML = '<span style="color:#ef4444">도메인 차단: api.openai.com 에 연결 불가 (네트워크/방화벽)</span>';
+    statusEl.innerHTML = '<span style="color:#ef4444">연결 불가 (네트워크/방화벽)</span>';
     return;
   }
-
-  // 2단계: API 키 인증 확인
-  statusEl.innerHTML = '<span style="color:#6b7280">키 확인 중...</span>';
   try {
     const res = await fetch("https://api.openai.com/v1/models", {
       mode: "cors",
@@ -49,17 +35,18 @@ async function testOpenAIKey(apiKey) {
     });
     if (res.ok) {
       statusEl.innerHTML = '<span class="ok">저장됨 (' + apiKey.slice(0, 8) + '...) — 연결 OK</span>';
+      collapseApiSection();
     } else {
       const data = await res.json();
       statusEl.innerHTML = '<span style="color:#ef4444">키 오류: ' + (data.error?.message || res.status) + '</span>';
     }
   } catch (e) {
-    statusEl.innerHTML = '<span style="color:#ef4444">CORS 차단 — 도메인은 열리나 Authorization 헤더가 막힘</span>';
+    statusEl.innerHTML = '<span style="color:#ef4444">CORS 오류: ' + e.message + '</span>';
   }
 }
 
-function updateKeyStatus(statusId, k) {
-  const el = document.getElementById(statusId);
+function updateKeyStatus(k) {
+  const el = document.getElementById("key-status");
   el.textContent = "";
   if (k) {
     const span = document.createElement("span");
@@ -69,17 +56,13 @@ function updateKeyStatus(statusId, k) {
   }
 }
 
-function toggleKey(type) {
-  const el = document.getElementById(type + "-key-input");
+function toggleKey() {
+  const el = document.getElementById("api-key-input");
   el.type = el.type === "password" ? "text" : "password";
 }
 
-function getGeminiKey() {
-  return localStorage.getItem(GEMINI_STORAGE_KEY) || "";
-}
-
-function getOpenAIKey() {
-  return localStorage.getItem(OPENAI_STORAGE_KEY) || "";
+function getKey() {
+  return localStorage.getItem(STORAGE_KEY) || "";
 }
 
 // --- Image ---
@@ -141,8 +124,8 @@ document.getElementById("file-input").addEventListener("change", e => handleFile
 
 // --- OCR ---
 async function runOcr() {
-  const apiKey = getGeminiKey();
-  if (!apiKey) return alert("Gemini API 키를 먼저 저장해주세요.");
+  const apiKey = getKey();
+  if (!apiKey) return alert("API 키를 먼저 저장해주세요.");
   if (!selectedFile) return;
 
   setLoading("ocr", true);
@@ -155,17 +138,26 @@ async function runOcr() {
     const mimeType = selectedFile.type || "image/jpeg";
 
     const body = {
-      contents: [{
-        parts: [
-          { inline_data: { mime_type: mimeType, data: b64 } },
-          { text: "이 문서에서 텍스트를 정확히 추출해줘. 원본 형식(줄바꿈, 단락 구조)을 최대한 유지하고, 오직 추출된 텍스트만 반환해줘." }
+      model: MODEL,
+      messages: [{
+        role: "user",
+        content: [
+          {
+            type: "image_url",
+            image_url: { url: "data:" + mimeType + ";base64," + b64 }
+          },
+          {
+            type: "text",
+            text: "이 문서에서 텍스트를 정확히 추출해줘. 원본 형식(줄바꿈, 단락 구조)을 최대한 유지하고, 오직 추출된 텍스트만 반환해줘."
+          }
         ]
-      }]
+      }],
+      max_tokens: 4096
     };
 
-    const text = await callGemini(apiKey, body);
+    const text = await callOpenAI(apiKey, body);
     document.getElementById("ocr-text").value = text;
-    document.getElementById("reply-btn").disabled = !getOpenAIKey();
+    document.getElementById("reply-btn").disabled = false;
   } catch (e) {
     showError("ocr-error", e.message);
   } finally {
@@ -175,8 +167,8 @@ async function runOcr() {
 
 // --- Reply ---
 async function runReply() {
-  const apiKey = getOpenAIKey();
-  if (!apiKey) return alert("OpenAI API 키를 먼저 저장해주세요.");
+  const apiKey = getKey();
+  if (!apiKey) return alert("API 키를 먼저 저장해주세요.");
 
   const feedbackText = document.getElementById("ocr-text").value.trim();
   if (!feedbackText) return;
@@ -187,19 +179,27 @@ async function runReply() {
 
   try {
     const body = {
-      model: OPENAI_MODEL,
-      instructions:
-        "당신은 전문적인 비즈니스 커뮤니케이션 전문가입니다. " +
-        "피드백을 주신 한 분께 드리는 답변 메시지를 작성합니다. " +
-        "메일 형식(수신자, 제목, 서명 등)이 아닌 자연스러운 답변글 형식으로 작성합니다.",
-      input:
-        "다음은 경영진 한 분이 주신 피드백입니다. 이 분께 드릴 정중하고 전문적인 답변글을 작성해주세요:\n\n" +
-        feedbackText + "\n\n" +
-        "작성 조건:\n" +
-        "- 메일 형식(수신자, 제목, 발신자 서명 등) 없이 답변 본문만 작성\n" +
-        "- 피드백 주신 분 한 분께 직접 드리는 말투\n" +
-        "- 감사함을 표현하고, 피드백 핵심에 직접 응답하며, 향후 개선 의지 포함\n" +
-        "- 답변 길이는 피드백 텍스트(" + feedbackText.length + "자)와 비슷한 수준"
+      model: MODEL,
+      messages: [
+        {
+          role: "system",
+          content:
+            "당신은 전문적인 비즈니스 커뮤니케이션 전문가입니다. " +
+            "피드백을 주신 한 분께 드리는 답변 메시지를 작성합니다. " +
+            "메일 형식(수신자, 제목, 서명 등)이 아닌 자연스러운 답변글 형식으로 작성합니다."
+        },
+        {
+          role: "user",
+          content:
+            "다음은 경영진 한 분이 주신 피드백입니다. 이 분께 드릴 정중하고 전문적인 답변글을 작성해주세요:\n\n" +
+            feedbackText + "\n\n" +
+            "작성 조건:\n" +
+            "- 메일 형식(수신자, 제목, 발신자 서명 등) 없이 답변 본문만 작성\n" +
+            "- 피드백 주신 분 한 분께 직접 드리는 말투\n" +
+            "- 감사함을 표현하고, 피드백 핵심에 직접 응답하며, 향후 개선 의지 포함\n" +
+            "- 답변 길이는 피드백 텍스트(" + feedbackText.length + "자)와 비슷한 수준"
+        }
+      ]
     };
 
     const text = await callOpenAI(apiKey, body);
@@ -211,53 +211,12 @@ async function runReply() {
   }
 }
 
-// --- Gemini API (OCR용, 재시도 포함) ---
-async function callGemini(apiKey, body, retries = 3) {
-  for (let i = 0; i < retries; i++) {
-    const res = await fetch(GEMINI_API_BASE, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey,
-      },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      const candidate = data.candidates?.[0];
-      if (!candidate) {
-        const blockReason = data.promptFeedback?.blockReason;
-        throw new Error(blockReason
-          ? "요청이 차단되었습니다: " + blockReason
-          : "응답에 후보가 없습니다.");
-      }
-      const { finishReason } = candidate;
-      if (finishReason && finishReason !== "STOP" && finishReason !== "MAX_TOKENS") {
-        throw new Error("생성이 중단되었습니다: " + finishReason);
-      }
-      const text = candidate.content?.parts?.[0]?.text;
-      if (!text) throw new Error("응답에서 텍스트를 찾을 수 없습니다.");
-      return text;
-    }
-    if ((res.status === 503 || res.status === 429) && i < retries - 1) {
-      const msg = data.error?.message || "";
-      const match = msg.match(/retry in ([\d.]+)s/i);
-      const wait = match ? Math.ceil(parseFloat(match[1])) * 1000 : 5000;
-      showError("ocr-error", `잠시 후 재시도 중... (${Math.ceil(wait/1000)}초)`);
-      document.getElementById("ocr-error").classList.remove("d-none");
-      await sleep(wait);
-      continue;
-    }
-    throw new Error(data.error?.message || "API 오류가 발생했습니다.");
-  }
-}
-
-// --- OpenAI API (답변 생성용) ---
+// --- OpenAI API ---
 async function callOpenAI(apiKey, body, retries = 3) {
   for (let i = 0; i < retries; i++) {
     let res;
     try {
-      res = await fetch(OPENAI_API_BASE, {
+      res = await fetch(API_BASE, {
         method: "POST",
         mode: "cors",
         credentials: "omit",
@@ -273,7 +232,7 @@ async function callOpenAI(apiKey, body, retries = 3) {
     }
     const data = await res.json();
     if (res.ok) {
-      const text = data.output?.[0]?.content?.[0]?.text;
+      const text = data.choices?.[0]?.message?.content;
       if (!text) throw new Error("응답에서 텍스트를 찾을 수 없습니다.");
       return text;
     }
@@ -323,7 +282,6 @@ async function copyReply() {
     await navigator.clipboard.writeText(text);
     markSuccess();
   } catch {
-    // clipboard API 미지원 환경 fallback
     const ta = document.createElement("textarea");
     ta.value = text;
     ta.style.cssText = "position:fixed;opacity:0;pointer-events:none";
