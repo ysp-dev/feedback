@@ -223,7 +223,7 @@ async function callGemini(apiKey, body, statusEl) {
 
   for (let i = 0; i < MODELS.length; i++) {
     const model = MODELS[i];
-    if (statusEl && i > 0) statusEl.textContent = model + " 시도 중...";
+    if (statusEl) statusEl.textContent = model + " 시도 중...";
 
     let res, data;
     try {
@@ -262,7 +262,8 @@ async function callGemini(apiKey, body, statusEl) {
       err.status = res.status;
       err.limitType = limitType;
       lastError = err;
-      continue; // RPD·RPM 구분 없이 항상 다음 모델로
+      if (i < MODELS.length - 1) await new Promise(r => setTimeout(r, 500));
+      continue;
     }
 
     throw new Error(rawMsg || "API 오류가 발생했습니다.");
@@ -270,6 +271,9 @@ async function callGemini(apiKey, body, statusEl) {
 
   if (lastError?.limitType === "rpd") {
     throw new Error("일일 API 한도 초과. 내일 다시 시도하세요.");
+  }
+  if (lastError?.status === 429) {
+    throw new Error(`모든 모델(${MODELS.length}개) 한도 초과. 잠시 후 다시 시도해주세요.`);
   }
   throw lastError || new Error("모든 모델에서 오류가 발생했습니다.");
 }
