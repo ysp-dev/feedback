@@ -419,3 +419,76 @@ body {
   line-height: 1.5;
   letter-spacing: .01em;
 }
+
+/* ── Classification ── */
+.classify-section {
+  display: flex;
+  flex-direction: column;
+  gap: .7rem;
+  border-top: 1px solid #e5e7eb;
+  padding-top: .75rem;
+}
+
+.classify-row {
+  display: flex;
+  gap: 1.5rem;
+}
+.classify-row .classify-group { flex: 1; min-width: 0; }
+
+.classify-group {
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+}
+
+.classify-label {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+
+.classify-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+}
+
+.classify-desc {
+  font-size: 11px;
+  color: #9ca3af;
+  letter-spacing: .01em;
+  line-height: 1.5;
+  min-height: 1em;
+}
+
+.chip {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: .03em;
+  cursor: pointer;
+  padding: .28rem .6rem;
+  border-radius: 0;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #9ca3af;
+  transition: background .12s, color .12s, border-color .12s;
+  -webkit-appearance: none;
+  line-height: 1.4;
+  text-align: left;
+}
+.chip:hover { border-color: #9ca3af; color: #000; }
+.chip.selected { background: #000; color: #fff; border-color: #000; }
+
+.chip-dir { padding: .32rem .65rem; }
+
+.chip-sub {
+  display: block;
+  font-size: 9px;
+  opacity: .65;
+  margin-top: 1px;
+  letter-spacing: 0;
+  text-transform: none;
+}

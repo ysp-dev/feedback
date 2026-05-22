@@ -87,6 +87,44 @@
     <textarea id="ocr-text" class="textarea" rows="8"
       placeholder="OCR 결과가 여기에 표시됩니다."></textarea>
     <div id="ocr-error" class="error-msg d-none"></div>
+
+    <!-- Classification -->
+    <div class="classify-section">
+      <div class="classify-group">
+        <span class="classify-label">방향</span>
+        <div class="classify-chips">
+          <button class="chip chip-dir" data-value="Top-down" onclick="selectChip(this,'direction')">Top-down ↓<span class="chip-sub">부서장 → 팀원</span></button>
+          <button class="chip chip-dir" data-value="Bottom-up" onclick="selectChip(this,'direction')">Bottom-up ↑<span class="chip-sub">부서장 → 경영진</span></button>
+        </div>
+      </div>
+      <div class="classify-group d-none" id="type-group">
+        <span class="classify-label">유형</span>
+        <div class="classify-chips" id="type-chips"></div>
+        <div id="type-desc" class="classify-desc"></div>
+      </div>
+      <div class="classify-group d-none" id="subtype-group">
+        <span class="classify-label">세부 유형</span>
+        <div class="classify-chips" id="subtype-chips"></div>
+      </div>
+      <div class="classify-row">
+        <div class="classify-group">
+          <span class="classify-label">강도</span>
+          <div class="classify-chips">
+            <button class="chip" data-value="라이트" onclick="selectChip(this,'intensity')">라이트</button>
+            <button class="chip" data-value="정식" onclick="selectChip(this,'intensity')">정식</button>
+          </div>
+        </div>
+        <div class="classify-group">
+          <span class="classify-label">시점</span>
+          <div class="classify-chips">
+            <button class="chip" data-value="즉시" onclick="selectChip(this,'timing')">즉시</button>
+            <button class="chip" data-value="정기" onclick="selectChip(this,'timing')">정기</button>
+            <button class="chip" data-value="공식" onclick="selectChip(this,'timing')">공식</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <button id="reply-btn" class="btn btn-solid w-full" disabled onclick="runReply()">
       <span id="reply-spinner" class="spinner d-none"></span>
       <span class="reply-label">답변 생성</span>
