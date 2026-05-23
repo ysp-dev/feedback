@@ -1,14 +1,6 @@
-const STORAGE_KEY = "gemini_api_key";
-const MODELS = [
-  "gemini-2.5-flash",
-  "gemini-2.5-flash-lite",
-  "gemini-2.0-flash",
-  "gemini-2.5-pro",
-];
-
-function getApiBase(model) {
-  return "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent";
-}
+const STORAGE_KEY = "openai_api_key";
+const MODEL = "gpt-5.5";
+const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 
 // --- API Key ---
 function loadKey() {
@@ -29,10 +21,10 @@ async function testKey(apiKey) {
   const el = document.getElementById("key-status");
   el.innerHTML = '<span class="status-dot dot-gray"></span>';
   try {
-    const res = await fetch(getApiBase(MODELS[0]), {
+    const res = await fetch(OPENAI_API_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-      body: JSON.stringify({ contents: [{ parts: [{ text: "hi" }] }] })
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + apiKey },
+      body: JSON.stringify({ model: MODEL, messages: [{ role: "user", content: "hi" }], max_tokens: 5 })
     });
     if (res.ok) {
       el.innerHTML = '<span class="status-dot dot-green"></span>';
@@ -136,16 +128,17 @@ async function runOcr() {
     const mimeType = selectedFile.type || "image/jpeg";
 
     const body = {
-      contents: [{
-        parts: [
-          { inline_data: { mime_type: mimeType, data: b64 } },
-          { text: "이 문서에서 텍스트를 정확히 추출해줘. 원본 형식(줄바꿈, 단락 구조)을 최대한 유지하고, 오직 추출된 텍스트만 반환해줘." }
+      messages: [{
+        role: "user",
+        content: [
+          { type: "image_url", image_url: { url: "data:" + mimeType + ";base64," + b64 } },
+          { type: "text", text: "이 문서에서 텍스트를 정확히 추출해줘. 원본 형식(줄바꿈, 단락 구조)을 최대한 유지하고, 오직 추출된 텍스트만 반환해줘." }
         ]
       }]
     };
 
     setOcrStatus("텍스트 추출 중...");
-    const text = await callGemini(apiKey, body, document.querySelector(".ocr-label"));
+    const text = await callOpenAI(apiKey, body, document.querySelector(".ocr-label"));
     document.getElementById("ocr-text").value = text;
     document.getElementById("reply-btn").disabled = false;
     setOcrStatus("");
@@ -316,21 +309,19 @@ async function runReply() {
   try {
     const { systemText, conditionText, introText } = buildPromptFromClassification();
     const body = {
-      system_instruction: {
-        parts: [{ text: systemText }]
-      },
-      contents: [{
-        parts: [{ text:
+      messages: [
+        { role: "system", content: systemText },
+        { role: "user", content:
           introText + "\n\n" +
           feedbackText + "\n\n" +
           "작성 조건:\n" +
           conditionText +
           "\n- 본문만 작성 (메일 서식 없음)"
-        }]
-      }]
+        }
+      ]
     };
 
-    const text = await callGemini(apiKey, body, document.querySelector(".reply-label"));
+    const text = await callOpenAI(apiKey, body, document.querySelector(".reply-label"));
     document.getElementById("reply-text").value = text;
   } catch (e) {
     showError("reply-error", e.message);
@@ -341,71 +332,38 @@ async function runReply() {
   }
 }
 
-// --- Gemini API ---
-function detectRateLimitType(rawMsg) {
-  const n = rawMsg.toLowerCase();
-  if (n.includes("per day") || n.includes("per_day") || n.includes("daily")) return "rpd";
-  return "rpm";
-}
+// --- OpenAI API ---
+async function callOpenAI(apiKey, body, statusEl) {
+  if (statusEl) statusEl.textContent = MODEL + " 처리 중...";
 
-async function callGemini(apiKey, body, statusEl) {
-  let lastError = null;
-
-  for (let i = 0; i < MODELS.length; i++) {
-    const model = MODELS[i];
-    if (statusEl) statusEl.textContent = model + " 시도 중...";
-
-    let res, data;
-    try {
-      res = await fetch(getApiBase(model), {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-        body: JSON.stringify(body),
-      });
-      data = await res.json();
-    } catch (e) {
-      throw new Error("네트워크 연결을 확인하세요.");
-    }
-
-    if (res.ok) {
-      const candidate = data.candidates?.[0];
-      if (!candidate) {
-        const blockReason = data.promptFeedback?.blockReason;
-        throw new Error(blockReason
-          ? "요청이 차단되었습니다: " + blockReason
-          : "응답에 후보가 없습니다.");
-      }
-      const { finishReason } = candidate;
-      if (finishReason && finishReason !== "STOP" && finishReason !== "MAX_TOKENS") {
-        throw new Error("생성이 중단되었습니다: " + finishReason);
-      }
-      const text = candidate.content?.parts?.[0]?.text;
-      if (!text) throw new Error("응답에서 텍스트를 찾을 수 없습니다.");
-      return text;
-    }
-
-    const rawMsg = data.error?.message || "";
-
-    if (res.status === 429 || res.status === 503) {
-      const limitType = res.status === 429 ? detectRateLimitType(rawMsg) : null;
-      const err = new Error(rawMsg || (res.status === 429 ? "요청 한도 초과" : "서버 오류"));
-      err.status = res.status;
-      err.limitType = limitType;
-      lastError = err;
-      if (i < MODELS.length - 1) await new Promise(r => setTimeout(r, 500));
-      continue;
-    }
-
-    throw new Error(rawMsg || "API 오류가 발생했습니다.");
+  let res, data;
+  try {
+    res = await fetch(OPENAI_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + apiKey },
+      body: JSON.stringify({ model: MODEL, ...body }),
+    });
+    data = await res.json();
+  } catch (e) {
+    throw new Error("네트워크 연결을 확인하세요.");
   }
 
-  if (lastError?.limitType === "rpd") {
-    throw new Error("일일 API 한도 초과. 내일 다시 시도하세요.");
+  if (res.ok) {
+    const choice = data.choices?.[0];
+    if (!choice) throw new Error("응답에 결과가 없습니다.");
+    const { finish_reason } = choice;
+    if (finish_reason && finish_reason !== "stop" && finish_reason !== "length") {
+      throw new Error("생성이 중단되었습니다: " + finish_reason);
+    }
+    const text = choice.message?.content;
+    if (!text) throw new Error("응답에서 텍스트를 찾을 수 없습니다.");
+    return text;
   }
-  if (lastError?.status === 429) {
-    throw new Error(`모든 모델(${MODELS.length}개) 한도 초과. 잠시 후 다시 시도해주세요.`);
-  }
-  throw lastError || new Error("모든 모델에서 오류가 발생했습니다.");
+
+  const rawMsg = data.error?.message || "";
+  if (res.status === 429) throw new Error("요청 한도 초과. 잠시 후 다시 시도해주세요.");
+  if (res.status === 503) throw new Error("서버 오류. 잠시 후 다시 시도해주세요.");
+  throw new Error(rawMsg || "API 오류가 발생했습니다.");
 }
 
 // --- Utils ---
