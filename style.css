@@ -29,13 +29,15 @@
 
 /* ── Base ── */
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue',
+  font-family: 'Pretendard Variable', Pretendard,
+               -apple-system, BlinkMacSystemFont, system-ui,
                'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
   font-size: 14px;
-  font-weight: 300;
+  font-weight: 350;
   color: var(--text-1);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overscroll-behavior-y: contain;
   min-height: 100dvh;
 }
@@ -282,7 +284,7 @@ body::before {
 .textarea {
   font-family: inherit;
   font-size: 13px;
-  font-weight: 300;
+  font-weight: 350;
   color: var(--text-1);
   background: var(--bg);
   border: 1px solid var(--border-md);
