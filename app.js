@@ -503,3 +503,4 @@ function toggleApiSection() {
 
 // init
 loadKey();
+document.getElementById("model-badge").textContent = MODEL;

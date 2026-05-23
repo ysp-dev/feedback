@@ -116,6 +116,21 @@ body::before {
   margin-top: .38rem;
 }
 
+.model-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: var(--r-pill);
+  background: var(--accent-glow);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .04em;
+  border: 1px solid rgba(99,102,241,0.18);
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
 .refresh-btn {
   position: absolute;
   right: 0; top: 50%;
