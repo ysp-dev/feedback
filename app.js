@@ -134,8 +134,7 @@ async function runOcr() {
           { type: "image_url", image_url: { url: "data:" + mimeType + ";base64," + b64 } },
           { type: "text", text: "이 문서에서 텍스트를 정확히 추출해줘. 원본 형식(줄바꿈, 단락 구조)을 최대한 유지하고, 오직 추출된 텍스트만 반환해줘." }
         ]
-      }],
-      temperature: 0.3,
+      }]
     };
 
     setOcrStatus("텍스트 추출 중...");
@@ -238,17 +237,14 @@ const INTENSITY_CONFIG = {
   "간결": {
     sysHint: "메신저 스타일로 2–4문장 이내, 핵심만 간결하게 작성합니다. 불필요한 수식어 없이 직접적으로 전달합니다.",
     condition: "2–4문장 이내, 메신저 톤, 핵심 메시지만 전달",
-    temperature: 0.5,
   },
   "표준": {
     sysHint: "전문적이고 격식 있는 어투로 5–8문장으로 작성합니다. 자연스러운 흐름으로 구성합니다.",
     condition: "5–8문장, 이메일 스타일, 구조적이되 자연스럽게",
-    temperature: 0.7,
   },
   "상세": {
     sysHint: "공식 문서 수준의 완결된 격식체로 작성합니다. 상황 → 핵심 → 의지·제안 순으로 구성합니다.",
     condition: "상황 → 핵심 → 의지·제안 완결 구조, 공문 수준 서술",
-    temperature: 0.8,
   },
 };
 
@@ -295,7 +291,6 @@ function buildPromptFromClassification() {
     systemText: sysLines.join(" "),
     conditionText: conditions.map(c => `- ${c}`).join("\n"),
     introText,
-    temperature: intensityCfg.temperature,
   };
 }
 
@@ -312,7 +307,7 @@ async function runReply() {
   document.getElementById("reply-text").value = "";
 
   try {
-    const { systemText, conditionText, introText, temperature } = buildPromptFromClassification();
+    const { systemText, conditionText, introText } = buildPromptFromClassification();
     const body = {
       messages: [
         { role: "system", content: systemText },
@@ -323,8 +318,7 @@ async function runReply() {
           conditionText +
           "\n- 본문만 작성 (메일 서식 없음)"
         }
-      ],
-      temperature,
+      ]
     };
 
     const text = await callOpenAI(apiKey, body, document.querySelector(".reply-label"));
