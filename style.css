@@ -425,7 +425,8 @@ body::before {
 
 .cropper-point.point-ne,
 .cropper-point.point-nw,
-.cropper-point.point-sw {
+.cropper-point.point-sw,
+.cropper-point.point-se {
   width: 15px !important;
   height: 15px !important;
   opacity: 1 !important;
