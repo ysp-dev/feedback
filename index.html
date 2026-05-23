@@ -105,21 +105,12 @@
         <span class="classify-label">세부 유형</span>
         <div class="classify-chips" id="subtype-chips"></div>
       </div>
-      <div class="classify-row">
-        <div class="classify-group">
-          <span class="classify-label">강도</span>
-          <div class="classify-chips">
-            <button class="chip" data-value="라이트" onclick="selectChip(this,'intensity')">라이트</button>
-            <button class="chip" data-value="정식" onclick="selectChip(this,'intensity')">정식</button>
-          </div>
-        </div>
-        <div class="classify-group">
-          <span class="classify-label">시점</span>
-          <div class="classify-chips">
-            <button class="chip" data-value="즉시" onclick="selectChip(this,'timing')">즉시</button>
-            <button class="chip" data-value="정기" onclick="selectChip(this,'timing')">정기</button>
-            <button class="chip" data-value="공식" onclick="selectChip(this,'timing')">공식</button>
-          </div>
+      <div class="classify-group">
+        <span class="classify-label">강도</span>
+        <div class="classify-chips">
+          <button class="chip" data-value="간결" onclick="selectChip(this,'intensity')">간결<span class="chip-sub">2–4문장</span></button>
+          <button class="chip" data-value="표준" onclick="selectChip(this,'intensity')">표준<span class="chip-sub">5–8문장</span></button>
+          <button class="chip" data-value="상세" onclick="selectChip(this,'intensity')">상세<span class="chip-sub">완결 구조</span></button>
         </div>
       </div>
     </div>
@@ -166,6 +157,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

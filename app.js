@@ -134,7 +134,8 @@ async function runOcr() {
           { type: "image_url", image_url: { url: "data:" + mimeType + ";base64," + b64 } },
           { type: "text", text: "이 문서에서 텍스트를 정확히 추출해줘. 원본 형식(줄바꿈, 단락 구조)을 최대한 유지하고, 오직 추출된 텍스트만 반환해줘." }
         ]
-      }]
+      }],
+      temperature: 0.3,
     };
 
     setOcrStatus("텍스트 추출 중...");
@@ -167,7 +168,8 @@ const CLASSIFY_DATA = {
       { id: "developing",  label: "성장촉진형",       desc: "경험을 역량으로 전환하도록 자극한다",         subtypes: ["경험 의미화", "자산화 유도", "시야 확장"] },
       { id: "correcting",  label: "교정·개선형",      desc: "잘못된 방향이나 습관을 바로잡는다",           subtypes: ["행동 교정", "인식 교정", "재발 방지"] },
       { id: "supporting",  label: "지지·배려형",      desc: "업무 너머 사람에게 관심을 전한다",            subtypes: ["과부하 인지", "심리적 안전", "관계 유지"] },
-      { id: "aligning",    label: "정렬·공유형",      desc: "팀 전체 방향과 개인 업무를 연결한다",         subtypes: ["맥락 공유", "기대 명확화", "팀 연결"] }
+      { id: "aligning",    label: "정렬·공유형",      desc: "팀 전체 방향과 개인 업무를 연결한다",         subtypes: ["맥락 공유", "기대 명확화", "팀 연결"] },
+      { id: "delegating",  label: "위임·자율형",      desc: "역량을 인정하며 결정 권한을 명시적으로 이양한다", subtypes: ["권한 이양", "자율적 실행 요청", "자기결정 지지"] }
     ]
   },
   "Bottom-up": {
@@ -176,26 +178,29 @@ const CLASSIFY_DATA = {
       { id: "proposing",   label: "건의·제안형",      desc: "더 나은 방향을 위에 제안한다",                subtypes: ["자원 요청", "프로세스 개선 제안", "우선순위 조정 건의"] },
       { id: "alerting",    label: "리스크 경고형",    desc: "의사결정권자가 알아야 할 위험을 공식화한다",  subtypes: ["기술적 리스크", "일정 리스크", "조직·역량 리스크"] },
       { id: "reporting",   label: "실행 결과 보고형", desc: "지시·결정에 대한 피드백 루프를 완성한다",    subtypes: ["완료 보고", "효과 검증", "예외 사항 보고"] },
-      { id: "advocating",  label: "의견 개진형",      desc: "경영 판단에 현장 시각을 반영시킨다",          subtypes: ["반론·이견 제시", "우선순위 이견", "팀원 옹호"] }
+      { id: "advocating",  label: "의견 개진형",      desc: "경영 판단에 현장 시각을 반영시킨다",          subtypes: ["반론·이견 제시", "우선순위 이견", "팀원 옹호"] },
+      { id: "requesting",  label: "승인 요청형",      desc: "경영진의 공식 결정을 요청하고 근거를 제시한다", subtypes: ["의사결정 요청", "자원 배정 승인", "우선순위 확정 요청"] }
     ]
   }
 };
 
 const SUBTYPE_PROMPT = {
-  recognizing: { "성과 인정": "완료된 결과물·목표 달성을 명확히 공식화하며 인정", "행동 칭찬": "결과보다 과정·태도·자세에 초점을 맞춰 칭찬", "성장 인정": "이전 대비 발전한 점을 구체적으로 언급하며 격려" },
-  directing:   { "행동 제안": "구체적인 넥스트 액션을 명확히 제시", "우선순위 정렬": "여러 업무 중 집중할 포인트를 우선순위와 함께 안내", "기준 제시": "판단의 기준과 원칙을 명확히 전달" },
-  developing:  { "경험 의미화": "지금 하는 일의 성장 가치와 의미를 짚어줌", "자산화 유도": "경험을 기록·정리해 재활용하도록 구체적으로 유도", "시야 확장": "현재 업무 너머의 큰 그림을 보게 하는 관점 제시" },
-  correcting:  { "행동 교정": "특정 행동·방식의 변화를 명확하되 배려 있게 요청", "인식 교정": "잘못된 판단 기준이나 관점을 바로잡는 메시지", "재발 방지": "같은 실수 반복을 막는 구체적인 루틴·방법 제안" },
-  supporting:  { "과부하 인지": "힘든 상황을 부서장이 인식하고 있음을 따뜻하게 전달", "심리적 안전": "실패·이견을 말해도 괜찮다는 심리적 안전 신호 전달", "관계 유지": "평가와 무관한 인간적 관심과 안부 표현" },
-  aligning:    { "맥락 공유": "개인 업무가 전체 프로젝트에서 왜 중요한지 설명", "기대 명확화": "부서장이 기대하는 바를 명확하고 구체적으로 전달", "팀 연결": "개인 업무가 팀·조직에 기여함을 인식시키는 메시지" },
-  informing:   { "현황 보고": "진행 상태와 리스크를 객관적·사실적으로 전달", "조기 경보": "문제가 커지기 전 선제적으로 이슈를 알리는 형식", "현장 체감 공유": "숫자로 표현되지 않는 팀의 실제 부하·분위기를 전달" },
-  proposing:   { "자원 요청": "인력·예산·일정 조정 필요성과 근거를 명확히 건의", "프로세스 개선 제안": "비효율 발견 내용과 구체적 개선안을 제안", "우선순위 조정 건의": "현장 관점에서 순서·범위 재검토를 건의" },
-  alerting:    { "기술적 리스크": "장애·이슈의 파급 가능성을 구체적으로 경고", "일정 리스크": "지연 가능성과 임계점을 사전에 공식 보고", "조직·역량 리스크": "핵심 인력 과부하·이탈 위험을 공식화" },
-  reporting:   { "완료 보고": "지시사항 실행 결과를 명확하고 간결하게 전달", "효과 검증": "의사결정의 실제 효과를 수치와 함께 전달", "예외 사항 보고": "계획 대비 달라진 점과 이유를 명확히 보고" },
-  advocating:  { "반론·이견 제시": "경영 방향과 다른 현장 판단을 정중하되 명확하게 공식화", "우선순위 이견": "경영진 관심 밖 항목의 중요성을 근거와 함께 강조", "팀원 옹호": "팀원의 성과·처우를 부서장이 대신 경영진에 전달" }
+  recognizing: { "성과 인정": "완료된 결과물·목표 달성을 공식화하며 인정 → 구체적 성과 언급 → 조직 기여 연결", "행동 칭찬": "결과보다 과정·태도·자세에 초점 → 관찰한 행동 1-2개 명시 → 지속 요청", "성장 인정": "이전 대비 발전한 점 → 구체적 변화 포인트 → 앞으로의 기대" },
+  directing:   { "행동 제안": "현 상황 1문장 → 구체적 액션 1–3개 (동사 시작) → 기한·기준 명시", "우선순위 정렬": "현재 업무 나열 → 집중 포인트 1개 선택 이유 → 나머지 처리 방향", "기준 제시": "판단 기준 명시 → 적용 예시 1개 → 향후 동일 상황 대처법" },
+  developing:  { "경험 의미화": "지금 업무의 성장 가치 → 이 경험이 쌓이는 역량 → 미래 활용 가능성", "자산화 유도": "경험 기록 방법 제안 → 재활용 시나리오 1개 구체화 → 실행 요청", "시야 확장": "현재 업무 → 연결되는 큰 그림 → 팀·조직 차원의 의미" },
+  correcting:  { "행동 교정": "관찰한 행동 사실 → 기대 행동과의 차이 → 구체적 변화 요청 (배려 있게)", "인식 교정": "잘못된 판단 기준 짚기 → 올바른 관점 제시 → 재발 방지 질문", "재발 방지": "실수 원인 1가지 → 예방 루틴·체크포인트 → 다음 실행 시 적용 요청" },
+  supporting:  { "과부하 인지": "부서장이 상황을 인식하고 있음 전달 → 구체적 부담 공감 → 지원 가능한 것 명시", "심리적 안전": "실패·이견을 말해도 괜찮다는 신호 → 과거 사례 인용 또는 본인 경험 공유 → 앞으로도 말해달라는 요청", "관계 유지": "평가와 무관한 인간적 관심 → 안부·노고 표현 → 가벼운 연결 마무리" },
+  aligning:    { "맥락 공유": "개인 업무 → 전체 프로젝트 내 위치 → 왜 지금 이 일이 중요한지", "기대 명확화": "기대 행동 구체화 → 성공 기준 1-2개 → 부서장이 지원 가능한 것", "팀 연결": "개인 업무 → 팀 전체 흐름 연결 → 동료에게 미치는 긍정적 영향" },
+  delegating:  { "권한 이양": "위임 범위 명확히 → 결정 가능한 것·불가한 것 경계 → 신뢰 표현", "자율적 실행 요청": "역량 인정 → 방법론은 본인이 선택 → 중간 체크포인트만 요청", "자기결정 지지": "팀원이 내린 판단 언급 → 지지 의사 표현 → 필요 시 후원 약속" },
+  informing:   { "현황 보고": "현재 진행 상태 → 주요 리스크 1-2개 → 다음 예정 사항", "조기 경보": "이슈 발생 시점·원인 → 파급 범위 예측 → 선제 대응 방향 제안", "현장 체감 공유": "수치로 안 보이는 팀 부하·분위기 → 구체적 사례 1개 → 경영진 인지 요청" },
+  proposing:   { "자원 요청": "필요 자원 종류·규모 → 근거 (현재 갭) → 미확보 시 리스크", "프로세스 개선 제안": "비효율 발견 내용 → 구체적 개선안 → 예상 효과 수치화", "우선순위 조정 건의": "현재 우선순위 문제점 → 조정 제안 → 현장 관점 근거" },
+  alerting:    { "기술적 리스크": "리스크 내용 → 파급 가능성·임계점 → 대응 옵션 1-2개", "일정 리스크": "지연 가능성 원인 → 예상 영향 범위 → 의사결정 필요 시점", "조직·역량 리스크": "핵심 인력 상태 → 이탈·과부하 징후 → 선제 조치 요청" },
+  reporting:   { "완료 보고": "완료 항목 → 수치 결과 → 다음 단계 (3-part 구조)", "효과 검증": "의사결정 내용 → 실제 효과 수치 → 추가 개선 포인트", "예외 사항 보고": "계획 대비 달라진 점 → 원인 → 조치 내용 또는 요청 사항" },
+  advocating:  { "반론·이견 제시": "경영 방향 인지 → 현장 판단과의 차이 → 근거 중심 정중한 공식화", "우선순위 이견": "경영진 관심 밖 항목 → 중요성 근거 → 우선순위 재검토 요청", "팀원 옹호": "팀원 성과·처우 상황 → 기여 내용 구체화 → 부서장으로서 공식 전달" },
+  requesting:  { "의사결정 요청": "결정 필요 사항 명시 → 선택 가능한 옵션 → 권고안과 근거 → 결정 요청", "자원 배정 승인": "필요 자원 종류·규모 → 미확보 시 리스크 → 승인 요청 및 기한", "우선순위 확정 요청": "현 우선순위 갈등 상황 → 경영진 판단이 필요한 이유 → 확정 기한 요청" }
 };
 
-const clsState = { direction: null, type: null, subtype: null, intensity: null, timing: null };
+const clsState = { direction: null, type: null, subtype: null, intensity: null };
 
 function selectChip(el, group) {
   el.closest('.classify-chips').querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
@@ -229,13 +234,30 @@ function onTypeChange(typeId) {
   document.getElementById('subtype-group').classList.remove('d-none');
 }
 
+const INTENSITY_CONFIG = {
+  "간결": {
+    sysHint: "메신저 스타일로 2–4문장 이내, 핵심만 간결하게 작성합니다. 불필요한 수식어 없이 직접적으로 전달합니다.",
+    condition: "2–4문장 이내, 메신저 톤, 핵심 메시지만 전달",
+    temperature: 0.5,
+  },
+  "표준": {
+    sysHint: "전문적이고 격식 있는 어투로 5–8문장으로 작성합니다. 자연스러운 흐름으로 구성합니다.",
+    condition: "5–8문장, 이메일 스타일, 구조적이되 자연스럽게",
+    temperature: 0.7,
+  },
+  "상세": {
+    sysHint: "공식 문서 수준의 완결된 격식체로 작성합니다. 상황 → 핵심 → 의지·제안 순으로 구성합니다.",
+    condition: "상황 → 핵심 → 의지·제안 완결 구조, 공문 수준 서술",
+    temperature: 0.8,
+  },
+};
+
 function buildPromptFromClassification() {
   const cls = clsState;
   const direction = cls.direction;
   const dirData = direction ? CLASSIFY_DATA[direction] : null;
   const typeData = (dirData && cls.type) ? dirData.types.find(t => t.id === cls.type) : null;
-  const intensity = cls.intensity || "정식";
-  const timing = cls.timing;
+  const intensityCfg = INTENSITY_CONFIG[cls.intensity] || INTENSITY_CONFIG["표준"];
 
   const sysLines = [];
   if (direction === "Top-down") {
@@ -245,15 +267,7 @@ function buildPromptFromClassification() {
   } else {
     sysLines.push("당신은 기업 비즈니스 커뮤니케이션 전문가입니다. 피드백에 대한 격식체 답변을 작성합니다.");
   }
-  if (intensity === "라이트" && timing === "즉시") {
-    sysLines.push("메신저 톤으로 짧고 가볍게, 이모지 1–2개 사용 가능합니다.");
-  } else if (intensity === "정식" && timing === "공식") {
-    sysLines.push("공식 문서 수준의 완결된 격식체로 작성합니다.");
-  } else if (intensity === "라이트") {
-    sysLines.push("친근하되 전문적인 어투로 간결하게 작성합니다.");
-  } else {
-    sysLines.push("전문적이고 격식 있는 어투로 작성합니다.");
-  }
+  sysLines.push(intensityCfg.sysHint);
   sysLines.push("메일 서식(수신자·제목·서명) 없이 본문만 작성합니다.");
 
   const conditions = [];
@@ -269,21 +283,7 @@ function buildPromptFromClassification() {
     const subtypeHint = (cls.subtype && SUBTYPE_PROMPT[cls.type]) ? SUBTYPE_PROMPT[cls.type][cls.subtype] : null;
     conditions.push(subtypeHint || typeData.desc);
   }
-  if (intensity === "라이트" && timing === "즉시") {
-    conditions.push("3–5문장 이내, 메신저 톤");
-  } else if (intensity === "라이트" && timing === "정기") {
-    conditions.push("핵심만 담아 7문장 이내");
-  } else if (intensity === "라이트" && timing === "공식") {
-    conditions.push("간결하고 임팩트 있는 메시지");
-  } else if (intensity === "정식" && timing === "즉시") {
-    conditions.push("격식 있되 간결하게");
-  } else if (intensity === "정식" && timing === "정기") {
-    conditions.push("구조적으로 정리된 형식 (상황 → 핵심 → 의지·제안)");
-  } else if (intensity === "정식" && timing === "공식") {
-    conditions.push("공식 문서 수준의 완결된 서술");
-  } else {
-    conditions.push("불필요한 반복·수식어 없이 간결하게 (입력 길이의 1~1.5배 이내)");
-  }
+  conditions.push(intensityCfg.condition);
 
   const introText = direction === "Top-down"
     ? "다음 팀원 보고 내용을 바탕으로 코칭 메시지를 작성해주세요:"
@@ -291,7 +291,12 @@ function buildPromptFromClassification() {
     ? "다음 내용을 바탕으로 경영진에게 전달할 메시지를 작성해주세요:"
     : "다음 피드백에 대한 답변을 작성해주세요:";
 
-  return { systemText: sysLines.join(" "), conditionText: conditions.map(c => `- ${c}`).join("\n"), introText };
+  return {
+    systemText: sysLines.join(" "),
+    conditionText: conditions.map(c => `- ${c}`).join("\n"),
+    introText,
+    temperature: intensityCfg.temperature,
+  };
 }
 
 // --- Reply ---
@@ -307,7 +312,7 @@ async function runReply() {
   document.getElementById("reply-text").value = "";
 
   try {
-    const { systemText, conditionText, introText } = buildPromptFromClassification();
+    const { systemText, conditionText, introText, temperature } = buildPromptFromClassification();
     const body = {
       messages: [
         { role: "system", content: systemText },
@@ -318,7 +323,8 @@ async function runReply() {
           conditionText +
           "\n- 본문만 작성 (메일 서식 없음)"
         }
-      ]
+      ],
+      temperature,
     };
 
     const text = await callOpenAI(apiKey, body, document.querySelector(".reply-label"));
