@@ -83,7 +83,9 @@ function applyCrop() {
     .toBlob(blob => {
       selectedFile = new File([blob], "cropped.jpg", { type: "image/jpeg" });
       const img = document.getElementById("preview-img");
+      if (img.src.startsWith("blob:")) URL.revokeObjectURL(img.src);
       img.src = URL.createObjectURL(blob);
+      img.alt = "크롭된 미리보기";
       img.style.display = "block";
       document.getElementById("ocr-btn").disabled = false;
       closeCropModal();
@@ -141,20 +143,16 @@ async function runOcr() {
     const text = await callOpenAI(apiKey, body, document.querySelector(".ocr-label"));
     document.getElementById("ocr-text").value = text;
     document.getElementById("reply-btn").disabled = false;
-    setOcrStatus("");
   } catch (e) {
     showError("ocr-error", e.message);
-    setOcrStatus("");
   } finally {
     setLoading("ocr", false);
+    setOcrStatus("");
   }
 }
 
 function setOcrStatus(msg) {
-  const btn = document.getElementById("ocr-btn");
-  btn.dataset.label = btn.dataset.label || "OCR 분석";
-  const spinner = document.getElementById("ocr-spinner");
-  const labelEl = btn.querySelector(".ocr-label");
+  const labelEl = document.getElementById("ocr-btn").querySelector(".ocr-label");
   if (labelEl) labelEl.textContent = msg || "OCR 분석";
 }
 
@@ -345,7 +343,7 @@ async function callOpenAI(apiKey, body, statusEl) {
     });
     data = await res.json();
   } catch (e) {
-    throw new Error("네트워크 연결을 확인하세요.");
+    throw new Error(e instanceof SyntaxError ? "응답 파싱 오류가 발생했습니다." : "네트워크 연결을 확인하세요.");
   }
 
   if (res.ok) {
@@ -424,7 +422,10 @@ function resetAll() {
   selectedFile = null;
   document.getElementById("camera-input").value = "";
   document.getElementById("file-input").value = "";
-  document.getElementById("preview-img").style.display = "none";
+  const previewImg = document.getElementById("preview-img");
+  if (previewImg.src.startsWith("blob:")) URL.revokeObjectURL(previewImg.src);
+  previewImg.src = "";
+  previewImg.style.display = "none";
   document.getElementById("ocr-btn").disabled = true;
   document.getElementById("ocr-text").value = "";
   document.getElementById("ocr-error").classList.add("d-none");
