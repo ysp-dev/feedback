@@ -1,34 +1,46 @@
-const STORAGE_KEY = "openai_api_key";
-const MODEL = "gpt-5.5";
+const OPENAI_STORAGE_KEY = "openai_api_key";
+const GEMINI_STORAGE_KEY = "gemini_api_key";
+const OPENAI_MODEL = "gpt-5.5";
+const GEMINI_OCR_MODEL = "gemini-3.1-flash-lite";
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_OCR_MODEL + ":generateContent";
 
 // --- API Key ---
 function loadKey() {
-  const k = localStorage.getItem(STORAGE_KEY) || "";
-  document.getElementById("api-key-input").value = k;
-  updateKeyStatus(k);
-  if (k) collapseApiSection();
+  const openAiKey = localStorage.getItem(OPENAI_STORAGE_KEY) || "";
+  const geminiKey = localStorage.getItem(GEMINI_STORAGE_KEY) || "";
+  document.getElementById("openai-api-key-input").value = openAiKey;
+  document.getElementById("gemini-api-key-input").value = geminiKey;
+  updateKeyStatus("openai-key-status", openAiKey);
+  updateKeyStatus("gemini-key-status", geminiKey);
+  if (openAiKey && geminiKey) collapseApiSection();
 }
 
 function saveKey() {
-  const k = document.getElementById("api-key-input").value.trim();
-  if (!k) return alert("API 키를 입력해주세요.");
-  localStorage.setItem(STORAGE_KEY, k);
-  testKey(k);
+  const k = document.getElementById("openai-api-key-input").value.trim();
+  if (!k) return alert("OpenAI API 키를 입력해주세요.");
+  localStorage.setItem(OPENAI_STORAGE_KEY, k);
+  testOpenAIKey(k);
 }
 
-async function testKey(apiKey) {
-  const el = document.getElementById("key-status");
+function saveGeminiKey() {
+  const k = document.getElementById("gemini-api-key-input").value.trim();
+  if (!k) return alert("Gemini API 키를 입력해주세요.");
+  localStorage.setItem(GEMINI_STORAGE_KEY, k);
+  testGeminiKey(k);
+}
+
+async function testOpenAIKey(apiKey) {
+  const el = document.getElementById("openai-key-status");
   el.innerHTML = '<span class="status-dot dot-gray"></span>';
   try {
     const res = await fetch(OPENAI_API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + apiKey },
-      body: JSON.stringify({ model: MODEL, messages: [{ role: "user", content: "hi" }], max_tokens: 5 })
+      body: JSON.stringify({ model: OPENAI_MODEL, messages: [{ role: "user", content: "hi" }], max_tokens: 5 })
     });
     if (res.ok) {
       el.innerHTML = '<span class="status-dot dot-green"></span>';
-      collapseApiSection();
     } else {
       el.innerHTML = '<span class="status-dot dot-red"></span>';
     }
@@ -37,18 +49,41 @@ async function testKey(apiKey) {
   }
 }
 
-function updateKeyStatus(k) {
-  const el = document.getElementById("key-status");
+async function testGeminiKey(apiKey) {
+  const el = document.getElementById("gemini-key-status");
+  el.innerHTML = '<span class="status-dot dot-gray"></span>';
+  try {
+    const res = await fetch(GEMINI_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify({ contents: [{ parts: [{ text: "hi" }] }] })
+    });
+    if (res.ok) {
+      el.innerHTML = '<span class="status-dot dot-green"></span>';
+    } else {
+      el.innerHTML = '<span class="status-dot dot-red"></span>';
+    }
+  } catch (e) {
+    el.innerHTML = '<span class="status-dot dot-red"></span>';
+  }
+}
+
+function updateKeyStatus(id, k) {
+  const el = document.getElementById(id);
   el.innerHTML = k ? '<span class="status-dot dot-green"></span>' : "";
 }
 
-function toggleKey() {
-  const el = document.getElementById("api-key-input");
+function toggleKey(inputId) {
+  const el = document.getElementById(inputId);
   el.type = el.type === "password" ? "text" : "password";
 }
 
-function getKey() {
-  return localStorage.getItem(STORAGE_KEY) || "";
+function getOpenAIKey() {
+  return localStorage.getItem(OPENAI_STORAGE_KEY) || "";
+}
+
+function getGeminiKey() {
+  return localStorage.getItem(GEMINI_STORAGE_KEY) || "";
 }
 
 // --- Image ---
@@ -115,8 +150,8 @@ document.getElementById("ocr-text").addEventListener("input", () => {
 
 // --- OCR ---
 async function runOcr() {
-  const apiKey = getKey();
-  if (!apiKey) return alert("API 키를 먼저 저장해주세요.");
+  const apiKey = getGeminiKey();
+  if (!apiKey) return alert("Gemini API 키를 먼저 저장해주세요.");
   if (!selectedFile) return;
 
   setLoading("ocr", true);
@@ -129,18 +164,8 @@ async function runOcr() {
     const b64 = await toBase64(selectedFile);
     const mimeType = selectedFile.type || "image/jpeg";
 
-    const body = {
-      messages: [{
-        role: "user",
-        content: [
-          { type: "image_url", image_url: { url: "data:" + mimeType + ";base64," + b64 } },
-          { type: "text", text: "이 문서에서 텍스트를 정확히 추출해줘. 원본 형식(줄바꿈, 단락 구조)을 최대한 유지하고, 오직 추출된 텍스트만 반환해줘." }
-        ]
-      }]
-    };
-
     setOcrStatus("텍스트 추출 중...");
-    const text = await callOpenAI(apiKey, body, document.querySelector(".ocr-label"));
+    const text = await callGeminiOcr(apiKey, b64, mimeType, document.querySelector(".ocr-label"));
     document.getElementById("ocr-text").value = text;
     document.getElementById("reply-btn").disabled = false;
   } catch (e) {
@@ -294,8 +319,8 @@ function buildPromptFromClassification() {
 
 // --- Reply ---
 async function runReply() {
-  const apiKey = getKey();
-  if (!apiKey) return alert("API 키를 먼저 저장해주세요.");
+  const apiKey = getOpenAIKey();
+  if (!apiKey) return alert("OpenAI API 키를 먼저 저장해주세요.");
 
   const feedbackText = document.getElementById("ocr-text").value.trim();
   if (!feedbackText) return;
@@ -330,16 +355,71 @@ async function runReply() {
   }
 }
 
+// --- Gemini OCR API ---
+async function callGeminiOcr(apiKey, imageBase64, mimeType, statusEl) {
+  if (statusEl) statusEl.textContent = GEMINI_OCR_MODEL + " OCR 처리 중...";
+
+  const body = {
+    contents: [{
+      parts: [
+        {
+          text: "이 문서에서 텍스트를 정확히 추출해줘. 원본 형식(줄바꿈, 단락 구조)을 최대한 유지하고, 오직 추출된 텍스트만 반환해줘."
+        },
+        {
+          inline_data: {
+            mime_type: mimeType,
+            data: imageBase64
+          }
+        }
+      ]
+    }],
+    generationConfig: {
+      temperature: 0
+    }
+  };
+
+  let res, data;
+  try {
+    res = await fetch(GEMINI_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify(body),
+    });
+    data = await res.json();
+  } catch (e) {
+    throw new Error(e instanceof SyntaxError ? "응답 파싱 오류가 발생했습니다." : "네트워크 연결을 확인하세요.");
+  }
+
+  if (res.ok) {
+    const candidate = data.candidates?.[0];
+    if (!candidate) throw new Error("응답에 OCR 결과가 없습니다.");
+    const { finishReason } = candidate;
+    if (finishReason && finishReason !== "STOP" && finishReason !== "MAX_TOKENS") {
+      throw new Error("OCR 처리가 중단되었습니다: " + finishReason);
+    }
+    const text = candidate.content?.parts?.map(part => part.text || "").join("").trim();
+    if (!text) throw new Error("OCR 응답에서 텍스트를 찾을 수 없습니다.");
+    return text;
+  }
+
+  const rawMsg = data.error?.message || "";
+  if (res.status === 400) throw new Error(rawMsg || "Gemini 요청 형식을 확인해주세요.");
+  if (res.status === 401 || res.status === 403) throw new Error("Gemini API 키 또는 권한을 확인해주세요.");
+  if (res.status === 429) throw new Error("Gemini 요청 한도 초과. 잠시 후 다시 시도해주세요.");
+  if (res.status === 503) throw new Error("Gemini 서버 오류. 잠시 후 다시 시도해주세요.");
+  throw new Error(rawMsg || "Gemini API 오류가 발생했습니다.");
+}
+
 // --- OpenAI API ---
 async function callOpenAI(apiKey, body, statusEl) {
-  if (statusEl) statusEl.textContent = MODEL + " 처리 중...";
+  if (statusEl) statusEl.textContent = OPENAI_MODEL + " 처리 중...";
 
   let res, data;
   try {
     res = await fetch(OPENAI_API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + apiKey },
-      body: JSON.stringify({ model: MODEL, ...body }),
+      body: JSON.stringify({ model: OPENAI_MODEL, ...body }),
     });
     data = await res.json();
   } catch (e) {
@@ -498,4 +578,4 @@ function toggleApiSection() {
 
 // init
 loadKey();
-document.getElementById("model-badge").textContent = MODEL;
+document.getElementById("model-badge").textContent = "OCR " + GEMINI_OCR_MODEL + " · Reply " + OPENAI_MODEL;
