@@ -17,6 +17,10 @@
   --accent-light:   #818cf8;
   --accent-glow:    rgba(99,102,241,0.14);
   --accent-glow-lg: rgba(99,102,241,0.24);
+  --ptr-bg:         rgba(255,255,255,.9);
+  --ptr-bg-ready:   rgba(255,255,255,.96);
+  --ptr-color:      #7a8491;
+  --ptr-color-ready:#647080;
   --ios-blue:       #007aff;
   --ios-label-3:    rgba(60,60,67,0.3);
   --danger:         #dc2626;
@@ -44,6 +48,10 @@
   --accent-light:   #a19bff;
   --accent-glow:    rgba(142,135,255,0.16);
   --accent-glow-lg: rgba(142,135,255,0.28);
+  --ptr-bg:         rgba(35,32,45,.92);
+  --ptr-bg-ready:   rgba(43,39,54,.96);
+  --ptr-color:      #9a94ad;
+  --ptr-color-ready:#d8d3e8;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -62,6 +70,10 @@
     --accent-light:   #a19bff;
     --accent-glow:    rgba(142,135,255,0.16);
     --accent-glow-lg: rgba(142,135,255,0.28);
+    --ptr-bg:         rgba(35,32,45,.92);
+    --ptr-bg-ready:   rgba(43,39,54,.96);
+    --ptr-color:      #9a94ad;
+    --ptr-color-ready:#d8d3e8;
   }
 }
 
@@ -121,19 +133,19 @@ body::before {
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: rgba(255,255,255,.9);
+  background: var(--ptr-bg);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #7a8491;
+  color: var(--ptr-color);
   transition: color .18s, background .18s, opacity .12s;
   z-index: 999;
   pointer-events: none;
 }
 
 .ptr-indicator.ptr-ready {
-  color: #647080;
-  background: rgba(255,255,255,.96);
+  color: var(--ptr-color-ready);
+  background: var(--ptr-bg-ready);
 }
 
 .ios-spinner {
