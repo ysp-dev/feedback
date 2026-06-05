@@ -89,6 +89,7 @@ function getGeminiKey() {
 // --- Image ---
 let selectedFile = null;
 let cropper = null;
+let cropResizeTimer = null;
 
 function handleFile(file) {
   if (!file) return;
@@ -102,14 +103,54 @@ function openCropModal(file) {
     const img = document.getElementById("crop-img");
     img.src = e.target.result;
     document.getElementById("crop-modal").classList.remove("d-none");
+    document.body.classList.add("crop-open");
     if (cropper) { cropper.destroy(); cropper = null; }
     cropper = new Cropper(img, {
-      viewMode: 1,
-      autoCropArea: 0.85,
+      viewMode: 3,
+      dragMode: "move",
+      autoCropArea: 0.92,
+      background: false,
+      center: false,
+      guides: true,
       highlight: false,
+      cropBoxMovable: false,
+      cropBoxResizable: true,
+      minCropBoxWidth: 96,
+      minCropBoxHeight: 96,
+      modal: true,
+      movable: true,
+      responsive: true,
+      restore: false,
+      rotatable: true,
+      scalable: false,
+      toggleDragModeOnDblclick: false,
+      wheelZoomRatio: 0.06,
+      zoomOnTouch: true,
+      zoomOnWheel: true,
+      ready() {
+        requestAnimationFrame(setInitialCropFrame);
+      },
     });
   };
   reader.readAsDataURL(file);
+}
+
+function setInitialCropFrame() {
+  if (!cropper) return;
+  const container = cropper.getContainerData();
+  if (!container.width || !container.height) return;
+
+  const safeWidth = Math.min(container.width * 0.88, container.width - 32);
+  const safeHeight = Math.min(container.height * 0.78, container.height - 32);
+  const width = Math.max(96, safeWidth);
+  const height = Math.max(96, safeHeight);
+
+  cropper.setCropBoxData({
+    left: (container.width - width) / 2,
+    top: (container.height - height) / 2,
+    width,
+    height
+  });
 }
 
 function applyCrop() {
@@ -128,7 +169,9 @@ function applyCrop() {
 }
 
 function rotateCrop(deg) {
-  if (cropper) cropper.rotate(deg);
+  if (!cropper) return;
+  cropper.rotate(deg);
+  window.setTimeout(setInitialCropFrame, 80);
 }
 
 function cancelCrop() {
@@ -139,8 +182,15 @@ function cancelCrop() {
 
 function closeCropModal() {
   document.getElementById("crop-modal").classList.add("d-none");
+  document.body.classList.remove("crop-open");
   if (cropper) { cropper.destroy(); cropper = null; }
 }
+
+window.addEventListener("resize", () => {
+  if (!cropper) return;
+  window.clearTimeout(cropResizeTimer);
+  cropResizeTimer = window.setTimeout(setInitialCropFrame, 120);
+});
 
 document.getElementById("camera-input").addEventListener("change", e => handleFile(e.target.files[0]));
 document.getElementById("file-input").addEventListener("change", e => handleFile(e.target.files[0]));
