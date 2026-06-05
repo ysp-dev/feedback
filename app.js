@@ -91,6 +91,8 @@ let selectedFile = null;
 let cropper = null;
 let cropResizeTimer = null;
 let cropPanState = null;
+let cropPinchState = null;
+const cropPointers = new Map();
 
 function handleFile(file) {
   if (!file) return;
@@ -107,7 +109,7 @@ function openCropModal(file) {
     document.body.classList.add("crop-open");
     if (cropper) { cropper.destroy(); cropper = null; }
     cropper = new Cropper(img, {
-      viewMode: 3,
+      viewMode: 0,
       dragMode: "move",
       autoCropArea: 0.92,
       background: false,
@@ -159,11 +161,70 @@ function isCropResizeTarget(target) {
   return !!target.closest(".cropper-point, .cropper-line");
 }
 
-function startCropPan(event) {
+function getCropGesturePoints() {
+  return Array.from(cropPointers.values()).slice(0, 2);
+}
+
+function getCropPointCenter(points) {
+  return {
+    x: (points[0].x + points[1].x) / 2,
+    y: (points[0].y + points[1].y) / 2
+  };
+}
+
+function getCropPointDistance(points) {
+  return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+}
+
+function startCropPinch() {
+  const points = getCropGesturePoints();
+  if (!cropper || points.length < 2) return;
+
+  const distance = getCropPointDistance(points);
+  if (!distance) return;
+
+  cropPanState = null;
+  cropPinchState = {
+    distance,
+    center: getCropPointCenter(points),
+    canvas: cropper.getCanvasData()
+  };
+
+  const modal = document.getElementById("crop-modal");
+  modal.classList.remove("is-panning");
+  modal.classList.add("is-pinching");
+}
+
+function setCropCanvas(canvas) {
+  cropper.setCanvasData({
+    left: canvas.left,
+    top: canvas.top,
+    width: canvas.width,
+    height: canvas.height
+  });
+}
+
+function startCropGesture(event) {
   if (!cropper || event.button > 0 || isCropResizeTarget(event.target)) return;
 
   event.preventDefault();
   event.stopPropagation();
+
+  cropPointers.set(event.pointerId, {
+    x: event.clientX,
+    y: event.clientY
+  });
+
+  try {
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  } catch (e) {
+    // Synthetic pointer events may not be capturable.
+  }
+
+  if (cropPointers.size >= 2) {
+    startCropPinch();
+    return;
+  }
 
   cropPanState = {
     pointerId: event.pointerId,
@@ -172,25 +233,78 @@ function startCropPan(event) {
   };
 
   document.getElementById("crop-modal").classList.add("is-panning");
-  event.currentTarget.setPointerCapture?.(event.pointerId);
 }
 
-function moveCropPan(event) {
-  if (!cropper || !cropPanState || cropPanState.pointerId !== event.pointerId) return;
+function moveCropGesture(event) {
+  if (!cropper || !cropPointers.has(event.pointerId)) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  cropPointers.set(event.pointerId, {
+    x: event.clientX,
+    y: event.clientY
+  });
+
+  if (cropPointers.size >= 2) {
+    if (!cropPinchState) startCropPinch();
+
+    const points = getCropGesturePoints();
+    const distance = getCropPointDistance(points);
+    if (!cropPinchState || !distance) return;
+
+    const center = getCropPointCenter(points);
+    const scale = Math.max(0.15, Math.min(8, distance / cropPinchState.distance));
+    const initial = cropPinchState.canvas;
+
+    setCropCanvas({
+      left: center.x - (cropPinchState.center.x - initial.left) * scale,
+      top: center.y - (cropPinchState.center.y - initial.top) * scale,
+      width: initial.width * scale,
+      height: initial.height * scale
+    });
+    return;
+  }
+
+  if (!cropPanState || cropPanState.pointerId !== event.pointerId) return;
 
   const dx = event.clientX - cropPanState.x;
   const dy = event.clientY - cropPanState.y;
-  if (dx || dy) cropper.move(dx, dy);
+  if (dx || dy) {
+    const canvas = cropper.getCanvasData();
+    setCropCanvas({
+      left: canvas.left + dx,
+      top: canvas.top + dy,
+      width: canvas.width,
+      height: canvas.height
+    });
+  }
 
   cropPanState.x = event.clientX;
   cropPanState.y = event.clientY;
 }
 
-function stopCropPan(event) {
-  if (cropPanState && event.pointerId === cropPanState.pointerId) {
-    cropPanState = null;
-    document.getElementById("crop-modal").classList.remove("is-panning");
+function stopCropGesture(event) {
+  cropPointers.delete(event.pointerId);
+
+  const modal = document.getElementById("crop-modal");
+  if (cropPointers.size >= 2) {
+    startCropPinch();
+    return;
   }
+
+  cropPinchState = null;
+  modal.classList.remove("is-pinching");
+
+  if (cropPointers.size === 1) {
+    const [pointerId, point] = Array.from(cropPointers.entries())[0];
+    cropPanState = { pointerId, x: point.x, y: point.y };
+    modal.classList.add("is-panning");
+    return;
+  }
+
+  cropPanState = null;
+  modal.classList.remove("is-panning");
 }
 
 function applyCrop() {
@@ -223,8 +337,11 @@ function cancelCrop() {
 function closeCropModal() {
   document.getElementById("crop-modal").classList.add("d-none");
   document.getElementById("crop-modal").classList.remove("is-panning");
+  document.getElementById("crop-modal").classList.remove("is-pinching");
   document.body.classList.remove("crop-open");
   cropPanState = null;
+  cropPinchState = null;
+  cropPointers.clear();
   if (cropper) { cropper.destroy(); cropper = null; }
 }
 
@@ -237,11 +354,11 @@ window.addEventListener("resize", () => {
 document.getElementById("camera-input").addEventListener("change", e => handleFile(e.target.files[0]));
 document.getElementById("file-input").addEventListener("change", e => handleFile(e.target.files[0]));
 document.getElementById("crop-modal").addEventListener("pointerdown", event => {
-  if (event.target.closest(".crop-container")) startCropPan(event);
+  if (event.target.closest(".crop-container")) startCropGesture(event);
 });
-document.getElementById("crop-modal").addEventListener("pointermove", moveCropPan);
-document.getElementById("crop-modal").addEventListener("pointerup", stopCropPan);
-document.getElementById("crop-modal").addEventListener("pointercancel", stopCropPan);
+document.getElementById("crop-modal").addEventListener("pointermove", moveCropGesture);
+document.getElementById("crop-modal").addEventListener("pointerup", stopCropGesture);
+document.getElementById("crop-modal").addEventListener("pointercancel", stopCropGesture);
 document.getElementById("ocr-text").addEventListener("input", () => {
   document.getElementById("reply-btn").disabled = !document.getElementById("ocr-text").value.trim();
 });
@@ -654,6 +771,10 @@ function toggleApiSection() {
   }
 
   document.addEventListener("touchstart", e => {
+    if (document.body.classList.contains("crop-open")) {
+      reset(false);
+      return;
+    }
     if (!atTop()) return;
     startY = e.touches[0].clientY;
     maxDelta = 0;
@@ -661,6 +782,10 @@ function toggleApiSection() {
   }, { passive: true });
 
   document.addEventListener("touchmove", e => {
+    if (document.body.classList.contains("crop-open")) {
+      reset(false);
+      return;
+    }
     if (!active) return;
     const delta = Math.max(0, e.touches[0].clientY - startY);
     maxDelta = Math.max(maxDelta, delta);
