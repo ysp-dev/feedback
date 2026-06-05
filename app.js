@@ -837,6 +837,71 @@ function toggleApiSection() {
   wrap.classList.contains("d-none") ? expandApiSection() : collapseApiSection();
 }
 
+// --- Pull to refresh ---
+(function () {
+  const THRESHOLD = 58;
+  const indicator = document.getElementById("ptr-indicator");
+  let startY = 0;
+  let maxDelta = 0;
+  let active = false;
+  let refreshing = false;
+
+  function atTop() {
+    return (window.scrollY || document.documentElement.scrollTop || document.body.scrollTop) <= 0;
+  }
+
+  function hideIndicator() {
+    indicator.style.transform = "translateX(-50%) translateY(-64px)";
+    indicator.style.opacity = 0;
+    indicator.classList.remove("ptr-ready", "is-spinning");
+    active = false;
+  }
+
+  function finishRefresh() {
+    refreshing = true;
+    indicator.style.transform = "translateX(-50%) translateY(0)";
+    indicator.style.opacity = 1;
+    indicator.classList.add("ptr-ready", "is-spinning");
+    active = false;
+    resetAll();
+    setTimeout(() => {
+      hideIndicator();
+      refreshing = false;
+    }, 720);
+  }
+
+  document.addEventListener("touchstart", e => {
+    if (refreshing || document.body.classList.contains("crop-open") || !atTop()) return;
+    startY = e.touches[0].clientY;
+    maxDelta = 0;
+    active = true;
+  }, { passive: true });
+
+  document.addEventListener("touchmove", e => {
+    if (refreshing || document.body.classList.contains("crop-open") || !active) return;
+    const delta = e.touches[0].clientY - startY;
+    if (delta <= 0) {
+      hideIndicator();
+      return;
+    }
+
+    e.preventDefault();
+    maxDelta = Math.max(maxDelta, delta);
+    const easedDelta = Math.min(delta * .72, 72);
+    const progress = Math.min(delta / THRESHOLD, 1);
+    indicator.style.transform = `translateX(-50%) translateY(${easedDelta - 64}px)`;
+    indicator.style.opacity = Math.min(progress + .08, 1);
+    indicator.classList.toggle("ptr-ready", delta >= THRESHOLD);
+  }, { passive: false });
+
+  document.addEventListener("touchend", () => {
+    if (!active) return;
+    maxDelta >= THRESHOLD ? finishRefresh() : hideIndicator();
+  }, { passive: true });
+
+  document.addEventListener("touchcancel", hideIndicator, { passive: true });
+})();
+
 // init
 loadKey();
 bindAutoSaveKeys();

@@ -49,6 +49,9 @@ body.crop-open {
   overscroll-behavior: none;
   touch-action: none;
 }
+body.crop-open .ptr-indicator {
+  display: none;
+}
 body::before {
   content: '';
   position: fixed;
@@ -58,6 +61,72 @@ body::before {
     radial-gradient(ellipse 55% 45% at 85% 95%, rgba(139,92,246,0.03) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
+}
+
+/* ── Pull-to-refresh ── */
+.ptr-indicator {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-64px);
+  opacity: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7a8491;
+  transition: color .18s, background .18s, opacity .12s;
+  z-index: 999;
+  pointer-events: none;
+}
+
+.ptr-indicator.ptr-ready {
+  color: #647080;
+  background: rgba(255,255,255,.96);
+}
+
+.ios-spinner {
+  display: block;
+  position: relative;
+  width: 22px;
+  height: 22px;
+}
+
+.ios-spinner i {
+  position: absolute;
+  left: 10px;
+  top: 1px;
+  width: 2.4px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: calc(.18 + (var(--shade) * .06));
+  transform: rotate(calc(var(--i) * 30deg));
+  transform-origin: 1.2px 10px;
+}
+
+.ios-spinner i:nth-child(1) { --i: 0; --shade: 12; }
+.ios-spinner i:nth-child(2) { --i: 1; --shade: 11; }
+.ios-spinner i:nth-child(3) { --i: 2; --shade: 10; }
+.ios-spinner i:nth-child(4) { --i: 3; --shade: 9; }
+.ios-spinner i:nth-child(5) { --i: 4; --shade: 8; }
+.ios-spinner i:nth-child(6) { --i: 5; --shade: 7; }
+.ios-spinner i:nth-child(7) { --i: 6; --shade: 6; }
+.ios-spinner i:nth-child(8) { --i: 7; --shade: 5; }
+.ios-spinner i:nth-child(9) { --i: 8; --shade: 4; }
+.ios-spinner i:nth-child(10) { --i: 9; --shade: 3; }
+.ios-spinner i:nth-child(11) { --i: 10; --shade: 2; }
+.ios-spinner i:nth-child(12) { --i: 11; --shade: 1; }
+
+.ptr-indicator.is-spinning .ios-spinner {
+  animation: ios-spinner-rotate .72s steps(12) infinite;
+}
+
+@keyframes ios-spinner-rotate {
+  to { transform: rotate(360deg); }
 }
 
 /* ── Layout ── */
