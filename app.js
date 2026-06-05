@@ -89,6 +89,12 @@ function getGeminiKey() {
 // --- Image ---
 let selectedFile = null;
 let cropper = null;
+let cropResizeTimer = null;
+let cropPanState = null;
+let cropPinchState = null;
+let cropPreviewBlob = null;
+let cropPreviewUrl = "";
+const cropPointers = new Map();
 
 function handleFile(file) {
   if (!file) return;
@@ -101,34 +107,301 @@ function openCropModal(file) {
   reader.onload = e => {
     const img = document.getElementById("crop-img");
     img.src = e.target.result;
+    resetCropPreview();
+    showCropEditor();
     document.getElementById("crop-modal").classList.remove("d-none");
+    document.body.classList.add("crop-open");
     if (cropper) { cropper.destroy(); cropper = null; }
     cropper = new Cropper(img, {
-      viewMode: 1,
-      autoCropArea: 0.85,
+      viewMode: 0,
+      dragMode: "move",
+      autoCropArea: 0.92,
+      background: false,
+      center: false,
+      guides: true,
       highlight: false,
+      cropBoxMovable: false,
+      cropBoxResizable: true,
+      minCropBoxWidth: 96,
+      minCropBoxHeight: 96,
+      modal: true,
+      movable: true,
+      responsive: true,
+      restore: false,
+      rotatable: true,
+      scalable: false,
+      toggleDragModeOnDblclick: false,
+      wheelZoomRatio: 0.06,
+      zoomOnTouch: true,
+      zoomOnWheel: true,
+      ready() {
+        cropper.setDragMode("move");
+        requestAnimationFrame(setInitialCropFrame);
+      },
     });
   };
   reader.readAsDataURL(file);
 }
 
-function applyCrop() {
+function setInitialCropFrame() {
   if (!cropper) return;
-  cropper.getCroppedCanvas({ maxWidth: 1400, maxHeight: 1400 })
-    .toBlob(blob => {
-      selectedFile = new File([blob], "cropped.jpg", { type: "image/jpeg" });
-      const img = document.getElementById("preview-img");
-      if (img.src.startsWith("blob:")) URL.revokeObjectURL(img.src);
-      img.src = URL.createObjectURL(blob);
-      img.alt = "크롭된 미리보기";
-      img.style.display = "block";
-      document.getElementById("ocr-btn").disabled = false;
-      closeCropModal();
+  const container = cropper.getContainerData();
+  if (!container.width || !container.height) return;
+
+  const safeWidth = Math.min(container.width * 0.88, container.width - 32);
+  const safeHeight = Math.min(container.height * 0.78, container.height - 32);
+  const width = Math.max(96, safeWidth);
+  const height = Math.max(96, safeHeight);
+
+  cropper.setCropBoxData({
+    left: (container.width - width) / 2,
+    top: (container.height - height) / 2,
+    width,
+    height
+  });
+}
+
+function resetCropPreview() {
+  if (cropPreviewUrl) URL.revokeObjectURL(cropPreviewUrl);
+  cropPreviewBlob = null;
+  cropPreviewUrl = "";
+  document.getElementById("crop-result-img").removeAttribute("src");
+}
+
+function showCropEditor() {
+  document.getElementById("crop-title").textContent = "이미지 크롭";
+  document.getElementById("crop-rotate").classList.remove("d-none");
+  document.getElementById("crop-work-area").classList.remove("d-none");
+  document.getElementById("crop-result").classList.add("d-none");
+  document.getElementById("crop-edit-btn").classList.add("d-none");
+  document.getElementById("crop-preview-btn").classList.remove("d-none");
+  document.getElementById("crop-apply-btn").classList.add("d-none");
+}
+
+function showCropResult() {
+  document.getElementById("crop-title").textContent = "크롭 결과";
+  document.getElementById("crop-rotate").classList.add("d-none");
+  document.getElementById("crop-work-area").classList.add("d-none");
+  document.getElementById("crop-result").classList.remove("d-none");
+  document.getElementById("crop-edit-btn").classList.remove("d-none");
+  document.getElementById("crop-preview-btn").classList.add("d-none");
+  document.getElementById("crop-apply-btn").classList.remove("d-none");
+}
+
+function getCropBlob() {
+  if (!cropper) return Promise.reject(new Error("크롭할 이미지가 없습니다."));
+  const canvas = cropper.getCroppedCanvas({ maxWidth: 1400, maxHeight: 1400 });
+  if (!canvas) return Promise.reject(new Error("크롭 결과를 만들 수 없습니다."));
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(blob => {
+      if (blob) resolve(blob);
+      else reject(new Error("크롭 결과를 만들 수 없습니다."));
     }, "image/jpeg", 0.82);
+  });
+}
+
+async function previewCrop() {
+  if (!cropper) return;
+
+  const btn = document.getElementById("crop-preview-btn");
+  btn.disabled = true;
+  try {
+    const blob = await getCropBlob();
+    resetCropPreview();
+    cropPreviewBlob = blob;
+    cropPreviewUrl = URL.createObjectURL(blob);
+    const img = document.getElementById("crop-result-img");
+    img.src = cropPreviewUrl;
+    showCropResult();
+  } catch (e) {
+    alert(e.message || "크롭 결과를 만들 수 없습니다.");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function editCropAgain() {
+  resetCropPreview();
+  showCropEditor();
+}
+
+function isCropResizeTarget(target) {
+  return !!target.closest(".cropper-point, .cropper-line");
+}
+
+function getCropGesturePoints() {
+  return Array.from(cropPointers.values()).slice(0, 2);
+}
+
+function getCropPointCenter(points) {
+  return {
+    x: (points[0].x + points[1].x) / 2,
+    y: (points[0].y + points[1].y) / 2
+  };
+}
+
+function getCropPointDistance(points) {
+  return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+}
+
+function startCropPinch() {
+  const points = getCropGesturePoints();
+  if (!cropper || points.length < 2) return;
+
+  const distance = getCropPointDistance(points);
+  if (!distance) return;
+
+  cropPanState = null;
+  cropPinchState = {
+    distance,
+    center: getCropPointCenter(points),
+    canvas: cropper.getCanvasData()
+  };
+
+  const modal = document.getElementById("crop-modal");
+  modal.classList.remove("is-panning");
+  modal.classList.add("is-pinching");
+}
+
+function setCropCanvas(canvas) {
+  cropper.setCanvasData({
+    left: canvas.left,
+    top: canvas.top,
+    width: canvas.width,
+    height: canvas.height
+  });
+}
+
+function startCropGesture(event) {
+  if (!cropper || event.button > 0 || isCropResizeTarget(event.target)) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  cropPointers.set(event.pointerId, {
+    x: event.clientX,
+    y: event.clientY
+  });
+
+  try {
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  } catch (e) {
+    // Synthetic pointer events may not be capturable.
+  }
+
+  if (cropPointers.size >= 2) {
+    startCropPinch();
+    return;
+  }
+
+  cropPanState = {
+    pointerId: event.pointerId,
+    x: event.clientX,
+    y: event.clientY
+  };
+
+  document.getElementById("crop-modal").classList.add("is-panning");
+}
+
+function moveCropGesture(event) {
+  if (!cropper || !cropPointers.has(event.pointerId)) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  cropPointers.set(event.pointerId, {
+    x: event.clientX,
+    y: event.clientY
+  });
+
+  if (cropPointers.size >= 2) {
+    if (!cropPinchState) startCropPinch();
+
+    const points = getCropGesturePoints();
+    const distance = getCropPointDistance(points);
+    if (!cropPinchState || !distance) return;
+
+    const center = getCropPointCenter(points);
+    const scale = Math.max(0.15, Math.min(8, distance / cropPinchState.distance));
+    const initial = cropPinchState.canvas;
+
+    setCropCanvas({
+      left: center.x - (cropPinchState.center.x - initial.left) * scale,
+      top: center.y - (cropPinchState.center.y - initial.top) * scale,
+      width: initial.width * scale,
+      height: initial.height * scale
+    });
+    return;
+  }
+
+  if (!cropPanState || cropPanState.pointerId !== event.pointerId) return;
+
+  const dx = event.clientX - cropPanState.x;
+  const dy = event.clientY - cropPanState.y;
+  if (dx || dy) {
+    const canvas = cropper.getCanvasData();
+    setCropCanvas({
+      left: canvas.left + dx,
+      top: canvas.top + dy,
+      width: canvas.width,
+      height: canvas.height
+    });
+  }
+
+  cropPanState.x = event.clientX;
+  cropPanState.y = event.clientY;
+}
+
+function stopCropGesture(event) {
+  cropPointers.delete(event.pointerId);
+
+  const modal = document.getElementById("crop-modal");
+  if (cropPointers.size >= 2) {
+    startCropPinch();
+    return;
+  }
+
+  cropPinchState = null;
+  modal.classList.remove("is-pinching");
+
+  if (cropPointers.size === 1) {
+    const [pointerId, point] = Array.from(cropPointers.entries())[0];
+    cropPanState = { pointerId, x: point.x, y: point.y };
+    modal.classList.add("is-panning");
+    return;
+  }
+
+  cropPanState = null;
+  modal.classList.remove("is-panning");
+}
+
+async function applyCrop() {
+  if (!cropper) return;
+
+  const btn = document.getElementById("crop-apply-btn");
+  btn.disabled = true;
+  try {
+    const blob = cropPreviewBlob || await getCropBlob();
+    selectedFile = new File([blob], "cropped.jpg", { type: "image/jpeg" });
+    const img = document.getElementById("preview-img");
+    if (img.src.startsWith("blob:")) URL.revokeObjectURL(img.src);
+    img.src = URL.createObjectURL(blob);
+    img.alt = "크롭된 미리보기";
+    img.style.display = "block";
+    document.getElementById("ocr-btn").disabled = false;
+    closeCropModal();
+  } catch (e) {
+    alert(e.message || "크롭 결과를 적용할 수 없습니다.");
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function rotateCrop(deg) {
-  if (cropper) cropper.rotate(deg);
+  if (!cropper) return;
+  cropper.rotate(deg);
+  window.setTimeout(setInitialCropFrame, 80);
 }
 
 function cancelCrop() {
@@ -139,11 +412,31 @@ function cancelCrop() {
 
 function closeCropModal() {
   document.getElementById("crop-modal").classList.add("d-none");
+  document.getElementById("crop-modal").classList.remove("is-panning");
+  document.getElementById("crop-modal").classList.remove("is-pinching");
+  document.body.classList.remove("crop-open");
+  cropPanState = null;
+  cropPinchState = null;
+  cropPointers.clear();
+  resetCropPreview();
+  showCropEditor();
   if (cropper) { cropper.destroy(); cropper = null; }
 }
 
+window.addEventListener("resize", () => {
+  if (!cropper) return;
+  window.clearTimeout(cropResizeTimer);
+  cropResizeTimer = window.setTimeout(setInitialCropFrame, 120);
+});
+
 document.getElementById("camera-input").addEventListener("change", e => handleFile(e.target.files[0]));
 document.getElementById("file-input").addEventListener("change", e => handleFile(e.target.files[0]));
+document.getElementById("crop-modal").addEventListener("pointerdown", event => {
+  if (event.target.closest(".crop-container")) startCropGesture(event);
+});
+document.getElementById("crop-modal").addEventListener("pointermove", moveCropGesture);
+document.getElementById("crop-modal").addEventListener("pointerup", stopCropGesture);
+document.getElementById("crop-modal").addEventListener("pointercancel", stopCropGesture);
 document.getElementById("ocr-text").addEventListener("input", () => {
   document.getElementById("reply-btn").disabled = !document.getElementById("ocr-text").value.trim();
 });
@@ -557,6 +850,10 @@ function toggleApiSection() {
   }
 
   document.addEventListener("touchstart", e => {
+    if (document.body.classList.contains("crop-open")) {
+      reset(false);
+      return;
+    }
     if (!atTop()) return;
     startY = e.touches[0].clientY;
     maxDelta = 0;
@@ -564,6 +861,10 @@ function toggleApiSection() {
   }, { passive: true });
 
   document.addEventListener("touchmove", e => {
+    if (document.body.classList.contains("crop-open")) {
+      reset(false);
+      return;
+    }
     if (!active) return;
     const delta = Math.max(0, e.touches[0].clientY - startY);
     maxDelta = Math.max(maxDelta, delta);

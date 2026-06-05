@@ -153,22 +153,27 @@
 <!-- Crop Modal -->
 <div id="crop-modal" class="crop-modal d-none">
   <div class="crop-header">
-    <span>이미지 크롭</span>
-    <div class="crop-rotate">
+    <span id="crop-title">이미지 크롭</span>
+    <div id="crop-rotate" class="crop-rotate">
       <button class="btn-text" onclick="rotateCrop(-90)">↺ 좌회전</button>
       <button class="btn-text" onclick="rotateCrop(90)">↻ 우회전</button>
     </div>
   </div>
-  <div class="crop-container">
+  <div id="crop-work-area" class="crop-container">
     <img id="crop-img" alt="" />
+  </div>
+  <div id="crop-result" class="crop-result d-none">
+    <img id="crop-result-img" alt="크롭 결과" />
   </div>
   <div class="crop-actions">
     <button class="btn btn-ghost" onclick="cancelCrop()">취소</button>
-    <button class="btn btn-solid" onclick="applyCrop()">적용</button>
+    <button id="crop-edit-btn" class="btn btn-ghost d-none" onclick="editCropAgain()">다시 조절</button>
+    <button id="crop-preview-btn" class="btn btn-solid" onclick="previewCrop()">크롭 확인</button>
+    <button id="crop-apply-btn" class="btn btn-solid d-none" onclick="applyCrop()">적용</button>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
-<script src="app.js?v=7"></script>
+<script src="app.js?v=12"></script>
 </body>
 </html>
