@@ -835,20 +835,36 @@ function toggleApiSection() {
   let startY = 0;
   let maxDelta = 0;
   let active = false;
+  let refreshing = false;
 
   function atTop() {
     return (window.scrollY || document.documentElement.scrollTop || document.body.scrollTop) === 0;
   }
 
   function reset(trigger) {
+    if (trigger) {
+      refreshing = true;
+      indicator.style.transform = "translateX(-50%) translateY(0)";
+      indicator.style.opacity = 1;
+      indicator.classList.add("ptr-ready", "is-spinning");
+      active = false;
+      resetAll();
+      setTimeout(() => {
+        indicator.style.transform = "translateX(-50%) translateY(-60px)";
+        indicator.style.opacity = 0;
+        indicator.classList.remove("ptr-ready", "is-spinning");
+        refreshing = false;
+      }, 720);
+      return;
+    }
     indicator.style.transform = "translateX(-50%) translateY(-60px)";
     indicator.style.opacity = 0;
-    indicator.classList.remove("ptr-ready");
+    indicator.classList.remove("ptr-ready", "is-spinning");
     active = false;
-    if (trigger) resetAll();
   }
 
   document.addEventListener("touchstart", e => {
+    if (refreshing) return;
     if (document.body.classList.contains("crop-open")) {
       reset(false);
       return;
@@ -860,6 +876,7 @@ function toggleApiSection() {
   }, { passive: true });
 
   document.addEventListener("touchmove", e => {
+    if (refreshing) return;
     if (document.body.classList.contains("crop-open")) {
       reset(false);
       return;

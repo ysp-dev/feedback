@@ -10,30 +10,17 @@
   <link rel="stylesheet" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" onload="this.rel='stylesheet'" />
   <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" /></noscript>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" />
-  <link rel="stylesheet" href="style.css?v=ios-refresh-2" />
+  <link rel="stylesheet" href="style.css?v=ios-spinner-refresh" />
 </head>
 <body>
 <div id="ptr-indicator" class="ptr-indicator" aria-hidden="true">
-  <svg class="ios-refresh-icon ptr-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path class="refresh-arc" d="M6.7 9.8a6.55 6.55 0 0 1 11.1-3.15"/>
-    <path class="refresh-head" d="M17.8 3.9v2.75h2.75"/>
-    <path class="refresh-arc" d="M17.3 14.2a6.55 6.55 0 0 1-11.1 3.15"/>
-    <path class="refresh-head" d="M6.2 20.1v-2.75H3.45"/>
-  </svg>
+  <span class="ios-spinner ptr-spinner"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
 </div>
 <div class="wrap">
 
 <header class="app-header">
     <h1 class="app-title">Feedback Reply</h1>
     <p class="app-sub">촬영 → OCR → 코칭 메시지 자동 생성 <span id="model-badge" class="model-badge"></span></p>
-    <button class="refresh-btn" onclick="resetAll()" title="새로고침" aria-label="새로고침">
-      <svg class="ios-refresh-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path class="refresh-arc" d="M6.7 9.8a6.55 6.55 0 0 1 11.1-3.15"/>
-        <path class="refresh-head" d="M17.8 3.9v2.75h2.75"/>
-        <path class="refresh-arc" d="M17.3 14.2a6.55 6.55 0 0 1-11.1 3.15"/>
-        <path class="refresh-head" d="M6.2 20.1v-2.75H3.45"/>
-      </svg>
-    </button>
   </header>
 
   <!-- API Key -->
