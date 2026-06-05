@@ -73,30 +73,30 @@ body::before {
   opacity: 0;
   width: 38px; height: 38px;
   border-radius: 50%;
-  background: rgba(255,255,255,.78);
-  border: 1px solid rgba(60,60,67,.16);
-  box-shadow: 0 8px 24px rgba(0,0,0,.16);
-  backdrop-filter: saturate(180%) blur(18px);
-  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  background: rgba(255,255,255,.56);
+  border: none;
   display: flex; align-items: center; justify-content: center;
   color: #8e8e93;
-  --ptr-rotation: -120deg;
-  transition: color .2s, box-shadow .2s;
+  transition: color .2s, background .2s;
   z-index: 999; pointer-events: none;
 }
 .ptr-indicator.ptr-ready {
   color: var(--ios-blue);
-  box-shadow: 0 10px 28px rgba(0,122,255,.18), 0 6px 18px rgba(0,0,0,.12);
+  background: rgba(255,255,255,.7);
 }
 
 .ios-refresh-icon {
-  stroke-width: 1.9;
+  display: block;
+  stroke: currentColor;
+  stroke-width: 2.15;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
 }
 
-.ptr-icon {
-  transform: rotate(var(--ptr-rotation));
-  transition: transform .08s linear;
+.refresh-arc,
+.refresh-head {
+  fill: none;
 }
 
 /* ── Layout ── */
@@ -183,27 +183,22 @@ body::before {
   top: calc(env(safe-area-inset-top, 0px) + 32px);
   right: calc(env(safe-area-inset-right, 0px) + 18px);
   z-index: 1000;
-  background: rgba(255,255,255,.94);
-  border: 1px solid rgba(60,60,67,.2);
+  background: transparent;
+  border: none;
   border-radius: var(--r-pill);
   cursor: pointer;
   color: var(--ios-blue);
   width: 38px; height: 38px;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 1px 2px rgba(0,0,0,.04), inset 0 -1px 0 rgba(0,0,0,.04);
-  backdrop-filter: saturate(180%) blur(14px);
-  -webkit-backdrop-filter: saturate(180%) blur(14px);
-  transition: background .18s, border-color .18s, color .18s, transform .18s;
+  padding: 0;
+  transition: color .18s, transform .18s;
   -webkit-tap-highlight-color: transparent;
 }
 .refresh-btn:hover {
   color: #0062cc;
-  border-color: var(--ios-label-3);
-  background: rgba(255,255,255,.9);
 }
 .refresh-btn:active {
   transform: scale(.92);
-  background: rgba(229,229,234,.82);
 }
 
 /* ── Dividers (hidden — spacing handled by cards) ── */

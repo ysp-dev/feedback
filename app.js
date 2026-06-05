@@ -842,7 +842,6 @@ function toggleApiSection() {
 
   function reset(trigger) {
     indicator.style.transform = "translateX(-50%) translateY(-60px)";
-    indicator.style.setProperty("--ptr-rotation", "-120deg");
     indicator.style.opacity = 0;
     indicator.classList.remove("ptr-ready");
     active = false;
@@ -870,7 +869,6 @@ function toggleApiSection() {
     maxDelta = Math.max(maxDelta, delta);
     const progress = Math.min(delta / THRESHOLD, 1);
     indicator.style.transform = `translateX(-50%) translateY(${(progress - 1) * 60}px)`;
-    indicator.style.setProperty("--ptr-rotation", `${-120 + progress * 300}deg`);
     indicator.style.opacity = progress;
     indicator.classList.toggle("ptr-ready", delta >= THRESHOLD);
   }, { passive: true });
