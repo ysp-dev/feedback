@@ -456,6 +456,16 @@ body::before {
 .crop-container .cropper-drag-box {
   touch-action: none;
 }
+.crop-container .cropper-drag-box,
+.crop-container .cropper-face,
+.crop-container .cropper-view-box {
+  cursor: grab;
+}
+.crop-modal.is-panning .cropper-drag-box,
+.crop-modal.is-panning .cropper-face,
+.crop-modal.is-panning .cropper-view-box {
+  cursor: grabbing;
+}
 .crop-container .cropper-view-box {
   outline: 2px solid rgba(255,255,255,.96);
   outline-color: rgba(255,255,255,.96);
