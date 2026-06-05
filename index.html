@@ -10,13 +10,13 @@
   <link rel="stylesheet" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" onload="this.rel='stylesheet'" />
   <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" /></noscript>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=ios-refresh" />
 </head>
 <body>
-<div id="ptr-indicator" class="ptr-indicator">
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-    <path d="M3 3v5h5"/>
+<div id="ptr-indicator" class="ptr-indicator" aria-hidden="true">
+  <svg class="ios-refresh-icon ptr-icon" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 12.35A8 8 0 1 1 17.66 6.7"/>
+    <path d="M17.75 3.55v4.2h4.2"/>
   </svg>
 </div>
 <div class="wrap">
@@ -24,10 +24,10 @@
 <header class="app-header">
     <h1 class="app-title">Feedback Reply</h1>
     <p class="app-sub">촬영 → OCR → 코칭 메시지 자동 생성 <span id="model-badge" class="model-badge"></span></p>
-    <button class="refresh-btn" onclick="resetAll()" title="초기화">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-        <path d="M3 3v5h5"/>
+    <button class="refresh-btn" onclick="resetAll()" title="새로고침" aria-label="새로고침">
+      <svg class="ios-refresh-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 12.35A8 8 0 1 1 17.66 6.7"/>
+        <path d="M17.75 3.55v4.2h4.2"/>
       </svg>
     </button>
   </header>
