@@ -238,6 +238,60 @@ body::before {
   letter-spacing: .04em;
 }
 
+.password-field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.password-field .input {
+  padding-right: 2.8rem;
+}
+
+.icon-btn {
+  font: inherit;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.eye-toggle {
+  position: absolute;
+  right: .35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #8b8f98;
+  background: rgba(99,102,241,.09);
+  transition: color .16s, background .16s;
+}
+
+.eye-toggle:hover {
+  color: var(--text-1);
+  background: rgba(99,102,241,.14);
+}
+
+.eye-icon {
+  display: block;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.eye-toggle .eye-show { display: block; }
+.eye-toggle .eye-hide { display: none; }
+.eye-toggle.is-visible .eye-show { display: none; }
+.eye-toggle.is-visible .eye-hide { display: block; }
+
 /* ── Status dots ── */
 .status-dot {
   display: inline-block;
@@ -364,12 +418,7 @@ body::before {
 @media (max-width: 480px) {
   .api-row {
     display: grid;
-    grid-template-columns: 48px minmax(0, 1fr) 58px;
-  }
-
-  .api-row .btn-text {
-    grid-column: 2 / -1;
-    justify-self: start;
+    grid-template-columns: 48px minmax(0, 1fr);
   }
 }
 

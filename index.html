@@ -37,15 +37,39 @@
     <div id="api-input-wrap">
       <div class="api-row">
         <span class="api-key-label">OpenAI</span>
-        <input id="openai-api-key-input" type="password" class="input" placeholder="sk-..." />
-        <button class="btn btn-ghost" onclick="saveKey()">저장</button>
-        <button class="btn-text" onclick="toggleKey('openai-api-key-input')">표시/숨김</button>
+        <div class="password-field">
+          <input id="openai-api-key-input" type="password" class="input" placeholder="sk-..." />
+          <button class="icon-btn eye-toggle" type="button" onclick="toggleKey('openai-api-key-input', this)" aria-label="API 키 표시" title="API 키 표시">
+            <svg class="eye-icon eye-show" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <svg class="eye-icon eye-hide" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M3 3l18 18"/>
+              <path d="M9.9 5.3A9.3 9.3 0 0 1 12 5c6 0 9.5 7 9.5 7a16.4 16.4 0 0 1-2.1 3.1"/>
+              <path d="M14.1 14.2A3 3 0 0 1 9.8 9.9"/>
+              <path d="M6.5 6.8A16.5 16.5 0 0 0 2.5 12s3.5 7 9.5 7a9.5 9.5 0 0 0 4.5-1.1"/>
+            </svg>
+          </button>
+        </div>
       </div>
       <div class="api-row">
         <span class="api-key-label">Gemini</span>
-        <input id="gemini-api-key-input" type="password" class="input" placeholder="AIza..." />
-        <button class="btn btn-ghost" onclick="saveGeminiKey()">저장</button>
-        <button class="btn-text" onclick="toggleKey('gemini-api-key-input')">표시/숨김</button>
+        <div class="password-field">
+          <input id="gemini-api-key-input" type="password" class="input" placeholder="AIza..." />
+          <button class="icon-btn eye-toggle" type="button" onclick="toggleKey('gemini-api-key-input', this)" aria-label="API 키 표시" title="API 키 표시">
+            <svg class="eye-icon eye-show" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <svg class="eye-icon eye-hide" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M3 3l18 18"/>
+              <path d="M9.9 5.3A9.3 9.3 0 0 1 12 5c6 0 9.5 7 9.5 7a16.4 16.4 0 0 1-2.1 3.1"/>
+              <path d="M14.1 14.2A3 3 0 0 1 9.8 9.9"/>
+              <path d="M6.5 6.8A16.5 16.5 0 0 0 2.5 12s3.5 7 9.5 7a9.5 9.5 0 0 0 4.5-1.1"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   </section>

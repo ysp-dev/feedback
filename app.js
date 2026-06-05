@@ -16,18 +16,21 @@ function loadKey() {
   if (openAiKey && geminiKey) collapseApiSection();
 }
 
-function saveKey() {
-  const k = document.getElementById("openai-api-key-input").value.trim();
-  if (!k) return alert("OpenAI API 키를 입력해주세요.");
-  localStorage.setItem(OPENAI_STORAGE_KEY, k);
-  testOpenAIKey(k);
+function autoSaveKey(inputId, storageKey, statusId) {
+  const k = document.getElementById(inputId).value.trim();
+  if (k) {
+    localStorage.setItem(storageKey, k);
+  } else {
+    localStorage.removeItem(storageKey);
+  }
+  updateKeyStatus(statusId, k);
 }
 
-function saveGeminiKey() {
-  const k = document.getElementById("gemini-api-key-input").value.trim();
-  if (!k) return alert("Gemini API 키를 입력해주세요.");
-  localStorage.setItem(GEMINI_STORAGE_KEY, k);
-  testGeminiKey(k);
+function bindAutoSaveKeys() {
+  document.getElementById("openai-api-key-input")
+    .addEventListener("input", () => autoSaveKey("openai-api-key-input", OPENAI_STORAGE_KEY, "openai-key-status"));
+  document.getElementById("gemini-api-key-input")
+    .addEventListener("input", () => autoSaveKey("gemini-api-key-input", GEMINI_STORAGE_KEY, "gemini-key-status"));
 }
 
 async function testOpenAIKey(apiKey) {
@@ -73,9 +76,15 @@ function updateKeyStatus(id, k) {
   el.innerHTML = k ? '<span class="status-dot dot-green"></span>' : "";
 }
 
-function toggleKey(inputId) {
+function toggleKey(inputId, btn) {
   const el = document.getElementById(inputId);
-  el.type = el.type === "password" ? "text" : "password";
+  const shouldShow = el.type === "password";
+  el.type = shouldShow ? "text" : "password";
+  if (btn) {
+    btn.classList.toggle("is-visible", shouldShow);
+    btn.setAttribute("aria-label", shouldShow ? "API 키 숨김" : "API 키 표시");
+    btn.title = shouldShow ? "API 키 숨김" : "API 키 표시";
+  }
 }
 
 function getOpenAIKey() {
@@ -830,4 +839,5 @@ function toggleApiSection() {
 
 // init
 loadKey();
+bindAutoSaveKeys();
 document.getElementById("model-badge").textContent = "OCR " + GEMINI_OCR_MODEL + " · Reply " + OPENAI_MODEL;
