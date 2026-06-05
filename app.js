@@ -92,6 +92,8 @@ let cropper = null;
 let cropResizeTimer = null;
 let cropPanState = null;
 let cropPinchState = null;
+let cropPreviewBlob = null;
+let cropPreviewUrl = "";
 const cropPointers = new Map();
 
 function handleFile(file) {
@@ -105,6 +107,8 @@ function openCropModal(file) {
   reader.onload = e => {
     const img = document.getElementById("crop-img");
     img.src = e.target.result;
+    resetCropPreview();
+    showCropEditor();
     document.getElementById("crop-modal").classList.remove("d-none");
     document.body.classList.add("crop-open");
     if (cropper) { cropper.destroy(); cropper = null; }
@@ -155,6 +159,71 @@ function setInitialCropFrame() {
     width,
     height
   });
+}
+
+function resetCropPreview() {
+  if (cropPreviewUrl) URL.revokeObjectURL(cropPreviewUrl);
+  cropPreviewBlob = null;
+  cropPreviewUrl = "";
+  document.getElementById("crop-result-img").removeAttribute("src");
+}
+
+function showCropEditor() {
+  document.getElementById("crop-title").textContent = "이미지 크롭";
+  document.getElementById("crop-rotate").classList.remove("d-none");
+  document.getElementById("crop-work-area").classList.remove("d-none");
+  document.getElementById("crop-result").classList.add("d-none");
+  document.getElementById("crop-edit-btn").classList.add("d-none");
+  document.getElementById("crop-preview-btn").classList.remove("d-none");
+  document.getElementById("crop-apply-btn").classList.add("d-none");
+}
+
+function showCropResult() {
+  document.getElementById("crop-title").textContent = "크롭 결과";
+  document.getElementById("crop-rotate").classList.add("d-none");
+  document.getElementById("crop-work-area").classList.add("d-none");
+  document.getElementById("crop-result").classList.remove("d-none");
+  document.getElementById("crop-edit-btn").classList.remove("d-none");
+  document.getElementById("crop-preview-btn").classList.add("d-none");
+  document.getElementById("crop-apply-btn").classList.remove("d-none");
+}
+
+function getCropBlob() {
+  if (!cropper) return Promise.reject(new Error("크롭할 이미지가 없습니다."));
+  const canvas = cropper.getCroppedCanvas({ maxWidth: 1400, maxHeight: 1400 });
+  if (!canvas) return Promise.reject(new Error("크롭 결과를 만들 수 없습니다."));
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(blob => {
+      if (blob) resolve(blob);
+      else reject(new Error("크롭 결과를 만들 수 없습니다."));
+    }, "image/jpeg", 0.82);
+  });
+}
+
+async function previewCrop() {
+  if (!cropper) return;
+
+  const btn = document.getElementById("crop-preview-btn");
+  btn.disabled = true;
+  try {
+    const blob = await getCropBlob();
+    resetCropPreview();
+    cropPreviewBlob = blob;
+    cropPreviewUrl = URL.createObjectURL(blob);
+    const img = document.getElementById("crop-result-img");
+    img.src = cropPreviewUrl;
+    showCropResult();
+  } catch (e) {
+    alert(e.message || "크롭 결과를 만들 수 없습니다.");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function editCropAgain() {
+  resetCropPreview();
+  showCropEditor();
 }
 
 function isCropResizeTarget(target) {
@@ -307,19 +376,26 @@ function stopCropGesture(event) {
   modal.classList.remove("is-panning");
 }
 
-function applyCrop() {
+async function applyCrop() {
   if (!cropper) return;
-  cropper.getCroppedCanvas({ maxWidth: 1400, maxHeight: 1400 })
-    .toBlob(blob => {
-      selectedFile = new File([blob], "cropped.jpg", { type: "image/jpeg" });
-      const img = document.getElementById("preview-img");
-      if (img.src.startsWith("blob:")) URL.revokeObjectURL(img.src);
-      img.src = URL.createObjectURL(blob);
-      img.alt = "크롭된 미리보기";
-      img.style.display = "block";
-      document.getElementById("ocr-btn").disabled = false;
-      closeCropModal();
-    }, "image/jpeg", 0.82);
+
+  const btn = document.getElementById("crop-apply-btn");
+  btn.disabled = true;
+  try {
+    const blob = cropPreviewBlob || await getCropBlob();
+    selectedFile = new File([blob], "cropped.jpg", { type: "image/jpeg" });
+    const img = document.getElementById("preview-img");
+    if (img.src.startsWith("blob:")) URL.revokeObjectURL(img.src);
+    img.src = URL.createObjectURL(blob);
+    img.alt = "크롭된 미리보기";
+    img.style.display = "block";
+    document.getElementById("ocr-btn").disabled = false;
+    closeCropModal();
+  } catch (e) {
+    alert(e.message || "크롭 결과를 적용할 수 없습니다.");
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function rotateCrop(deg) {
@@ -342,6 +418,8 @@ function closeCropModal() {
   cropPanState = null;
   cropPinchState = null;
   cropPointers.clear();
+  resetCropPreview();
+  showCropEditor();
   if (cropper) { cropper.destroy(); cropper = null; }
 }
 

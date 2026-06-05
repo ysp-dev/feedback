@@ -433,6 +433,24 @@ body::before {
   user-select: none;
 }
 #crop-img { display: block; max-width: 100%; }
+.crop-result {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: #050505;
+  overflow: hidden;
+}
+#crop-result-img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border: 1px solid rgba(255,255,255,.18);
+  box-shadow: 0 12px 40px rgba(0,0,0,.36);
+}
 .crop-actions {
   display: flex;
   gap: .6rem;
