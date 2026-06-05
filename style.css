@@ -29,6 +29,42 @@
   --r-pill: 999px;
 }
 
+:root[data-theme="dark"] {
+  --bg:             #121019;
+  --surface:        #191722;
+  --surface-2:      #23202d;
+  --surface-3:      #2b2736;
+  --border:         rgba(255,255,255,0.08);
+  --border-md:      rgba(255,255,255,0.14);
+  --border-focus:   rgba(142,135,255,0.55);
+  --text-1:         #f4f2fb;
+  --text-2:         #a39eb5;
+  --text-3:         #676174;
+  --accent:         #8e87ff;
+  --accent-light:   #a19bff;
+  --accent-glow:    rgba(142,135,255,0.16);
+  --accent-glow-lg: rgba(142,135,255,0.28);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg:             #121019;
+    --surface:        #191722;
+    --surface-2:      #23202d;
+    --surface-3:      #2b2736;
+    --border:         rgba(255,255,255,0.08);
+    --border-md:      rgba(255,255,255,0.14);
+    --border-focus:   rgba(142,135,255,0.55);
+    --text-1:         #f4f2fb;
+    --text-2:         #a39eb5;
+    --text-3:         #676174;
+    --accent:         #8e87ff;
+    --accent-light:   #a19bff;
+    --accent-glow:    rgba(142,135,255,0.16);
+    --accent-glow-lg: rgba(142,135,255,0.28);
+  }
+}
+
 /* ── Base ── */
 body {
   font-family: 'Pretendard Variable', Pretendard,
@@ -61,6 +97,18 @@ body::before {
     radial-gradient(ellipse 55% 45% at 85% 95%, rgba(139,92,246,0.03) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ── Pull-to-refresh ── */
@@ -146,9 +194,9 @@ body::before {
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr) 38px;
   align-items: center;
-  row-gap: .38rem;
+  row-gap: .42rem;
   text-align: center;
-  padding: 1.4rem 0 1.1rem;
+  padding: 1.15rem 0 1.05rem;
   margin-top: .8rem;
   margin-bottom: 1.5rem;
 }
@@ -164,18 +212,105 @@ body::before {
   opacity: .6;
 }
 
-.app-title {
-  grid-column: 2;
+.app-logo-picture {
+  grid-column: 1 / -1;
   grid-row: 1;
-  min-width: 0;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: .28em;
-  text-transform: uppercase;
-  background: linear-gradient(120deg, #0f0f0f 0%, var(--accent) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  justify-self: center;
+  display: block;
+  width: min(68vw, 310px);
+  max-width: 100%;
+  line-height: 0;
+}
+
+.app-logo {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.app-logo-dark {
+  display: none;
+}
+
+:root[data-theme="dark"] .app-logo-light {
+  display: none;
+}
+
+:root[data-theme="dark"] .app-logo-dark {
+  display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .app-logo-light {
+    display: none;
+  }
+
+  :root:not([data-theme]) .app-logo-dark {
+    display: block;
+  }
+}
+
+.theme-toggle {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  align-self: start;
+  justify-self: end;
+  position: relative;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--text-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  transition: background .18s, border-color .18s, color .18s, transform .18s;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.theme-toggle:hover {
+  color: var(--text-1);
+  border-color: var(--border-md);
+  background: var(--surface-2);
+}
+
+.theme-toggle:active {
+  transform: scale(.94);
+}
+
+.theme-icon {
+  display: block;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.theme-icon-sun {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-icon-moon {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-icon-sun {
+  display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .theme-icon-moon {
+    display: none;
+  }
+
+  :root:not([data-theme]) .theme-icon-sun {
+    display: block;
+  }
 }
 
 .app-sub {

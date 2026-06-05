@@ -1,9 +1,42 @@
 const OPENAI_STORAGE_KEY = "openai_api_key";
 const GEMINI_STORAGE_KEY = "gemini_api_key";
+const THEME_STORAGE_KEY = "feedback_theme";
 const OPENAI_MODEL = "gpt-5.5";
 const GEMINI_OCR_MODEL = "gemini-3.1-flash-lite";
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_OCR_MODEL + ":generateContent";
+
+// --- Theme ---
+function getActiveTheme() {
+  const stored = localStorage.getItem(THEME_STORAGE_KEY);
+  if (stored === "light" || stored === "dark") return stored;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  const themeColor = theme === "dark" ? "#121019" : "#f7f6f4";
+  document.querySelectorAll('meta[name="theme-color"]').forEach(meta => {
+    meta.setAttribute("content", themeColor);
+  });
+
+  const btn = document.querySelector(".theme-toggle");
+  if (btn) {
+    const nextTheme = theme === "dark" ? "라이트" : "다크";
+    btn.setAttribute("aria-label", nextTheme + " 모드로 전환");
+    btn.title = nextTheme + " 모드";
+  }
+}
+
+function initTheme() {
+  applyTheme(getActiveTheme());
+}
+
+function toggleTheme() {
+  const nextTheme = getActiveTheme() === "dark" ? "light" : "dark";
+  localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+  applyTheme(nextTheme);
+}
 
 // --- API Key ---
 function loadKey() {
@@ -903,6 +936,7 @@ function toggleApiSection() {
 })();
 
 // init
+initTheme();
 loadKey();
 bindAutoSaveKeys();
 document.getElementById("model-badge").textContent = "OCR " + GEMINI_OCR_MODEL + " · Reply " + OPENAI_MODEL;
