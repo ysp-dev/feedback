@@ -874,6 +874,7 @@ function toggleApiSection() {
 (function () {
   const THRESHOLD = 58;
   const indicator = document.getElementById("ptr-indicator");
+  const page = document.querySelector(".wrap");
   let startY = 0;
   let maxDelta = 0;
   let active = false;
@@ -887,7 +888,18 @@ function toggleApiSection() {
     indicator.style.transform = "translateX(-50%) translateY(-64px)";
     indicator.style.opacity = 0;
     indicator.classList.remove("ptr-ready", "is-spinning");
+    settlePage(0);
     active = false;
+  }
+
+  function movePage(y) {
+    page.classList.remove("ptr-settling");
+    page.style.transform = `translateY(${y}px)`;
+  }
+
+  function settlePage(y) {
+    page.classList.add("ptr-settling");
+    page.style.transform = `translateY(${y}px)`;
   }
 
   function finishRefresh() {
@@ -895,6 +907,7 @@ function toggleApiSection() {
     indicator.style.transform = "translateX(-50%) translateY(0)";
     indicator.style.opacity = 1;
     indicator.classList.add("ptr-ready", "is-spinning");
+    settlePage(44);
     active = false;
     resetAll();
     setTimeout(() => {
@@ -908,6 +921,7 @@ function toggleApiSection() {
     startY = e.touches[0].clientY;
     maxDelta = 0;
     active = true;
+    page.classList.remove("ptr-settling");
   }, { passive: true });
 
   document.addEventListener("touchmove", e => {
@@ -921,7 +935,9 @@ function toggleApiSection() {
     e.preventDefault();
     maxDelta = Math.max(maxDelta, delta);
     const easedDelta = Math.min(delta * .72, 72);
+    const pageDelta = Math.min(delta * .48, 64);
     const progress = Math.min(delta / THRESHOLD, 1);
+    movePage(pageDelta);
     indicator.style.transform = `translateX(-50%) translateY(${easedDelta - 64}px)`;
     indicator.style.opacity = Math.min(progress + .08, 1);
     indicator.classList.toggle("ptr-ready", delta >= THRESHOLD);

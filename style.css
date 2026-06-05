@@ -197,7 +197,13 @@ body::before {
   padding: 0 1.1rem 3rem;
   padding-top: env(safe-area-inset-top);
   padding-bottom: max(3rem, env(safe-area-inset-bottom));
-  position: relative; z-index: 1;
+  position: relative;
+  z-index: 1;
+  will-change: transform;
+}
+
+.wrap.ptr-settling {
+  transition: transform .28s cubic-bezier(.22, .61, .36, 1);
 }
 
 /* ── Header ── */
