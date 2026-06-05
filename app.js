@@ -939,4 +939,3 @@ function toggleApiSection() {
 initTheme();
 loadKey();
 bindAutoSaveKeys();
-document.getElementById("model-badge").textContent = "OCR " + GEMINI_OCR_MODEL + " · Reply " + OPENAI_MODEL;

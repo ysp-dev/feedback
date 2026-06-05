@@ -194,22 +194,10 @@ body::before {
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr) 38px;
   align-items: center;
-  row-gap: .42rem;
   text-align: center;
-  padding: 1.15rem 0 1.05rem;
-  margin-top: .8rem;
-  margin-bottom: 1.5rem;
-}
-
-.app-header::after {
-  content: '';
-  grid-column: 2;
-  justify-self: center;
-  display: block;
-  width: 32px; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--accent), transparent);
-  margin: .1rem auto 0;
-  opacity: .6;
+  padding: .55rem 0 .4rem;
+  margin-top: .45rem;
+  margin-bottom: .8rem;
 }
 
 .app-logo-picture {
@@ -217,7 +205,7 @@ body::before {
   grid-row: 1;
   justify-self: center;
   display: block;
-  width: min(68vw, 310px);
+  width: min(61vw, 280px);
   max-width: 100%;
   line-height: 0;
 }
@@ -252,8 +240,8 @@ body::before {
 
 .theme-toggle {
   grid-column: 3;
-  grid-row: 1 / span 2;
-  align-self: start;
+  grid-row: 1;
+  align-self: center;
   justify-self: end;
   position: relative;
   z-index: 2;
@@ -311,34 +299,6 @@ body::before {
   :root:not([data-theme]) .theme-icon-sun {
     display: block;
   }
-}
-
-.app-sub {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  min-width: 0;
-  padding: 0 46px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 11px;
-  color: var(--text-2);
-  letter-spacing: .07em;
-}
-
-.model-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 1px 7px;
-  border-radius: var(--r-pill);
-  background: var(--accent-glow);
-  color: var(--accent);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: .04em;
-  border: 1px solid rgba(99,102,241,0.18);
-  vertical-align: middle;
-  margin-left: 4px;
 }
 
 /* ── Dividers (hidden — spacing handled by cards) ── */
