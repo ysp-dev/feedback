@@ -136,6 +136,7 @@ let cropPanState = null;
 let cropPinchState = null;
 let cropPreviewBlob = null;
 let cropPreviewUrl = "";
+let cropDragged = false;
 const cropPointers = new Map();
 
 function handleFile(file) {
@@ -351,6 +352,7 @@ function moveCropGesture(event) {
 
   event.preventDefault();
   event.stopPropagation();
+  cropDragged = true;
 
   cropPointers.set(event.pointerId, {
     x: event.clientX,
@@ -459,6 +461,7 @@ function closeCropModal() {
   document.body.classList.remove("crop-open");
   cropPanState = null;
   cropPinchState = null;
+  cropDragged = false;
   cropPointers.clear();
   resetCropPreview();
   showCropEditor();
@@ -479,6 +482,24 @@ document.getElementById("crop-modal").addEventListener("pointerdown", event => {
 document.getElementById("crop-modal").addEventListener("pointermove", moveCropGesture);
 document.getElementById("crop-modal").addEventListener("pointerup", stopCropGesture);
 document.getElementById("crop-modal").addEventListener("pointercancel", stopCropGesture);
+
+// 팬·핀치 직후 브라우저가 손가락 위치에 발사하는 합성 click 이 취소·적용 등
+// 버튼을 눌러버리는 사고를 막는다. 모든 click 은 자기 pointerdown 으로 시작하므로
+// pointerdown 에서 플래그를 리셋하고, 드래그가 일어났을 때만 다음 click 을 삼킨다.
+document.addEventListener("pointerdown", () => { cropDragged = false; }, true);
+document.addEventListener("click", event => {
+  if (cropDragged) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+}, true);
+
+// ESC 로 크롭 모달 닫기 (취소와 동일)
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && !document.getElementById("crop-modal").classList.contains("d-none")) {
+    cancelCrop();
+  }
+});
 document.getElementById("ocr-text").addEventListener("input", () => {
   document.getElementById("reply-btn").disabled = !document.getElementById("ocr-text").value.trim();
 });
