@@ -181,6 +181,9 @@ function openCropModal(file) {
         cropper.setDragMode("move");
         requestAnimationFrame(setInitialCropFrame);
       },
+      crop() {
+        updateCropHandleScale();
+      },
     });
   };
   reader.readAsDataURL(file);
@@ -202,6 +205,17 @@ function setInitialCropFrame() {
     width,
     height
   });
+}
+
+// 크롭 박스가 작아지면 코너·변 핸들을 같이 줄여 라인이 겹치지 않게 한다.
+// (IntelliMemo의 canvas 가이드박스처럼 마커를 박스 크기에 비례시키는 거동)
+function updateCropHandleScale() {
+  if (!cropper) return;
+  const box = cropper.getCropBoxData();
+  const min = Math.min(box.width || 0, box.height || 0);
+  if (!min) return;
+  const scale = Math.max(0.25, Math.min(1, min / 96));
+  document.querySelector(".crop-container").style.setProperty("--handle-scale", scale);
 }
 
 function resetCropPreview() {
