@@ -5,6 +5,9 @@ const OPENAI_MODEL = "gpt-5.5";
 const GEMINI_OCR_MODEL = "gemini-3.1-flash-lite";
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_OCR_MODEL + ":generateContent";
+// 연결 검증용(토큰 비용 없이 키 유효성만 확인하는 모델 목록 조회 엔드포인트)
+const OPENAI_VERIFY_URL = "https://api.openai.com/v1/models";
+const GEMINI_VERIFY_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
 // --- Theme ---
 function getActiveTheme() {
@@ -39,74 +42,78 @@ function toggleTheme() {
 }
 
 // --- API Key ---
+// 키가 등록되면 실제 연결을 검증해 초록불을 켠다.
+//  · 없음 → 불 꺼짐(점 없음)  · 검사 중 → 회색  · 연결됨 → 초록  · 실패 → 빨강
+const keyTestTimers = {};
+
 function loadKey() {
   const openAiKey = localStorage.getItem(OPENAI_STORAGE_KEY) || "";
   const geminiKey = localStorage.getItem(GEMINI_STORAGE_KEY) || "";
   document.getElementById("openai-api-key-input").value = openAiKey;
   document.getElementById("gemini-api-key-input").value = geminiKey;
-  updateKeyStatus("openai-key-status", openAiKey);
-  updateKeyStatus("gemini-key-status", geminiKey);
+  refreshKeyStatus("openai", openAiKey);
+  refreshKeyStatus("gemini", geminiKey);
   if (openAiKey && geminiKey) collapseApiSection();
 }
 
-function autoSaveKey(inputId, storageKey, statusId) {
+function autoSaveKey(inputId, storageKey, provider) {
   const k = document.getElementById(inputId).value.trim();
   if (k) {
     localStorage.setItem(storageKey, k);
   } else {
     localStorage.removeItem(storageKey);
   }
-  updateKeyStatus(statusId, k);
+  refreshKeyStatus(provider, k);
 }
 
 function bindAutoSaveKeys() {
   document.getElementById("openai-api-key-input")
-    .addEventListener("input", () => autoSaveKey("openai-api-key-input", OPENAI_STORAGE_KEY, "openai-key-status"));
+    .addEventListener("input", () => autoSaveKey("openai-api-key-input", OPENAI_STORAGE_KEY, "openai"));
   document.getElementById("gemini-api-key-input")
-    .addEventListener("input", () => autoSaveKey("gemini-api-key-input", GEMINI_STORAGE_KEY, "gemini-key-status"));
+    .addEventListener("input", () => autoSaveKey("gemini-api-key-input", GEMINI_STORAGE_KEY, "gemini"));
+}
+
+function setKeyDot(provider, kind) {
+  const el = document.getElementById(provider + "-key-status");
+  if (!el) return;
+  el.innerHTML = kind ? '<span class="status-dot dot-' + kind + '"></span>' : "";
+}
+
+// 입력 도중 매 타건마다 호출하지 않도록 디바운스 후 연결을 검증한다.
+function refreshKeyStatus(provider, key) {
+  clearTimeout(keyTestTimers[provider]);
+  if (!key) { setKeyDot(provider, null); return; }
+  setKeyDot(provider, "gray");
+  keyTestTimers[provider] = setTimeout(() => {
+    if (provider === "openai") testOpenAIKey(key);
+    else testGeminiKey(key);
+  }, 600);
 }
 
 async function testOpenAIKey(apiKey) {
-  const el = document.getElementById("openai-key-status");
-  el.innerHTML = '<span class="status-dot dot-gray"></span>';
+  setKeyDot("openai", "gray");
   try {
-    const res = await fetch(OPENAI_API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + apiKey },
-      body: JSON.stringify({ model: OPENAI_MODEL, messages: [{ role: "user", content: "hi" }], max_tokens: 5 })
+    const res = await fetch(OPENAI_VERIFY_URL, {
+      headers: { "Authorization": "Bearer " + apiKey }
     });
-    if (res.ok) {
-      el.innerHTML = '<span class="status-dot dot-green"></span>';
-    } else {
-      el.innerHTML = '<span class="status-dot dot-red"></span>';
-    }
+    if (getOpenAIKey() !== apiKey) return; // 검사 도중 키가 바뀌면 결과 무시
+    setKeyDot("openai", res.ok ? "green" : "red");
   } catch (e) {
-    el.innerHTML = '<span class="status-dot dot-red"></span>';
+    if (getOpenAIKey() !== apiKey) return;
+    setKeyDot("openai", "red");
   }
 }
 
 async function testGeminiKey(apiKey) {
-  const el = document.getElementById("gemini-key-status");
-  el.innerHTML = '<span class="status-dot dot-gray"></span>';
+  setKeyDot("gemini", "gray");
   try {
-    const res = await fetch(GEMINI_API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-      body: JSON.stringify({ contents: [{ parts: [{ text: "hi" }] }] })
-    });
-    if (res.ok) {
-      el.innerHTML = '<span class="status-dot dot-green"></span>';
-    } else {
-      el.innerHTML = '<span class="status-dot dot-red"></span>';
-    }
+    const res = await fetch(GEMINI_VERIFY_URL + "?key=" + encodeURIComponent(apiKey));
+    if (getGeminiKey() !== apiKey) return; // 검사 도중 키가 바뀌면 결과 무시
+    setKeyDot("gemini", res.ok ? "green" : "red");
   } catch (e) {
-    el.innerHTML = '<span class="status-dot dot-red"></span>';
+    if (getGeminiKey() !== apiKey) return;
+    setKeyDot("gemini", "red");
   }
-}
-
-function updateKeyStatus(id, k) {
-  const el = document.getElementById(id);
-  el.innerHTML = k ? '<span class="status-dot dot-green"></span>' : "";
 }
 
 function toggleKey(inputId, btn) {
