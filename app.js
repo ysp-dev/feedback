@@ -42,8 +42,9 @@ function toggleTheme() {
 }
 
 // --- API Key ---
-// 키가 등록되면 실제 연결을 검증해 초록불을 켠다.
-//  · 없음 → 불 꺼짐(점 없음)  · 검사 중 → 회색  · 연결됨 → 초록  · 실패 → 빨강
+// 키가 등록되면 바로 초록불을 켠다. 이후 연결을 검증해 키가 명백히 무효(401/403)일 때만 빨강.
+//  · 없음 → 불 꺼짐(점 없음)  · 등록/연결됨 → 초록  · 인증 실패 → 빨강
+//  (CORS·네트워크로 검증을 못 읽는 경우엔 초록 유지)
 const keyTestTimers = {};
 
 function loadKey() {
@@ -79,11 +80,11 @@ function setKeyDot(provider, kind) {
   el.innerHTML = kind ? '<span class="status-dot dot-' + kind + '"></span>' : "";
 }
 
-// 입력 도중 매 타건마다 호출하지 않도록 디바운스 후 연결을 검증한다.
+// 등록되면 바로 초록을 켜고, 디바운스 후 연결을 검증한다.
 function refreshKeyStatus(provider, key) {
   clearTimeout(keyTestTimers[provider]);
   if (!key) { setKeyDot(provider, null); return; }
-  setKeyDot(provider, "gray");
+  setKeyDot(provider, "green");
   keyTestTimers[provider] = setTimeout(() => {
     if (provider === "openai") testOpenAIKey(key);
     else testGeminiKey(key);
@@ -91,28 +92,25 @@ function refreshKeyStatus(provider, key) {
 }
 
 async function testOpenAIKey(apiKey) {
-  setKeyDot("openai", "gray");
   try {
     const res = await fetch(OPENAI_VERIFY_URL, {
       headers: { "Authorization": "Bearer " + apiKey }
     });
     if (getOpenAIKey() !== apiKey) return; // 검사 도중 키가 바뀌면 결과 무시
-    setKeyDot("openai", res.ok ? "green" : "red");
+    // 명백한 인증 실패만 빨강, 그 외(성공·기타 응답)는 초록 유지
+    setKeyDot("openai", res.status === 401 || res.status === 403 ? "red" : "green");
   } catch (e) {
-    if (getOpenAIKey() !== apiKey) return;
-    setKeyDot("openai", "red");
+    // CORS·네트워크로 검증 불가 → 등록 상태(초록) 유지
   }
 }
 
 async function testGeminiKey(apiKey) {
-  setKeyDot("gemini", "gray");
   try {
     const res = await fetch(GEMINI_VERIFY_URL + "?key=" + encodeURIComponent(apiKey));
     if (getGeminiKey() !== apiKey) return; // 검사 도중 키가 바뀌면 결과 무시
-    setKeyDot("gemini", res.ok ? "green" : "red");
+    setKeyDot("gemini", res.status === 400 || res.status === 401 || res.status === 403 ? "red" : "green");
   } catch (e) {
-    if (getGeminiKey() !== apiKey) return;
-    setKeyDot("gemini", "red");
+    // CORS·네트워크로 검증 불가 → 등록 상태(초록) 유지
   }
 }
 
