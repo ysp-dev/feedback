@@ -1,12 +1,12 @@
-const OPENAI_STORAGE_KEY = "openai_api_key";
+const ANTHROPIC_STORAGE_KEY = "anthropic_api_key";
 const GEMINI_STORAGE_KEY = "gemini_api_key";
 const THEME_STORAGE_KEY = "feedback_theme";
-const OPENAI_MODEL = "gpt-5.5";
+const CLAUDE_MODEL = "claude-sonnet-4-6";
 const GEMINI_OCR_MODEL = "gemini-3.1-flash-lite";
-const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_OCR_MODEL + ":generateContent";
 // 연결 검증용(토큰 비용 없이 키 유효성만 확인하는 모델 목록 조회 엔드포인트)
-const OPENAI_VERIFY_URL = "https://api.openai.com/v1/models";
+const ANTHROPIC_VERIFY_URL = "https://api.anthropic.com/v1/models";
 const GEMINI_VERIFY_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
 // --- Theme ---
@@ -48,13 +48,13 @@ function toggleTheme() {
 const keyTestTimers = {};
 
 function loadKey() {
-  const openAiKey = localStorage.getItem(OPENAI_STORAGE_KEY) || "";
+  const anthropicKey = localStorage.getItem(ANTHROPIC_STORAGE_KEY) || "";
   const geminiKey = localStorage.getItem(GEMINI_STORAGE_KEY) || "";
-  document.getElementById("openai-api-key-input").value = openAiKey;
+  document.getElementById("anthropic-api-key-input").value = anthropicKey;
   document.getElementById("gemini-api-key-input").value = geminiKey;
-  refreshKeyStatus("openai", openAiKey);
+  refreshKeyStatus("anthropic", anthropicKey);
   refreshKeyStatus("gemini", geminiKey);
-  if (openAiKey && geminiKey) collapseApiSection();
+  if (anthropicKey && geminiKey) collapseApiSection();
 }
 
 function autoSaveKey(inputId, storageKey, provider) {
@@ -68,8 +68,8 @@ function autoSaveKey(inputId, storageKey, provider) {
 }
 
 function bindAutoSaveKeys() {
-  document.getElementById("openai-api-key-input")
-    .addEventListener("input", () => autoSaveKey("openai-api-key-input", OPENAI_STORAGE_KEY, "openai"));
+  document.getElementById("anthropic-api-key-input")
+    .addEventListener("input", () => autoSaveKey("anthropic-api-key-input", ANTHROPIC_STORAGE_KEY, "anthropic"));
   document.getElementById("gemini-api-key-input")
     .addEventListener("input", () => autoSaveKey("gemini-api-key-input", GEMINI_STORAGE_KEY, "gemini"));
 }
@@ -86,19 +86,22 @@ function refreshKeyStatus(provider, key) {
   if (!key) { setKeyDot(provider, null); return; }
   setKeyDot(provider, "green");
   keyTestTimers[provider] = setTimeout(() => {
-    if (provider === "openai") testOpenAIKey(key);
+    if (provider === "anthropic") testAnthropicKey(key);
     else testGeminiKey(key);
   }, 600);
 }
 
-async function testOpenAIKey(apiKey) {
+async function testAnthropicKey(apiKey) {
   try {
-    const res = await fetch(OPENAI_VERIFY_URL, {
-      headers: { "Authorization": "Bearer " + apiKey }
+    const res = await fetch(ANTHROPIC_VERIFY_URL, {
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+      }
     });
-    if (getOpenAIKey() !== apiKey) return; // 검사 도중 키가 바뀌면 결과 무시
-    // 명백한 인증 실패만 빨강, 그 외(성공·기타 응답)는 초록 유지
-    setKeyDot("openai", res.status === 401 || res.status === 403 ? "red" : "green");
+    if (getAnthropicKey() !== apiKey) return; // 검사 도중 키가 바뀌면 결과 무시
+    setKeyDot("anthropic", res.status === 401 || res.status === 403 ? "red" : "green");
   } catch (e) {
     // CORS·네트워크로 검증 불가 → 등록 상태(초록) 유지
   }
@@ -125,8 +128,8 @@ function toggleKey(inputId, btn) {
   }
 }
 
-function getOpenAIKey() {
-  return localStorage.getItem(OPENAI_STORAGE_KEY) || "";
+function getAnthropicKey() {
+  return localStorage.getItem(ANTHROPIC_STORAGE_KEY) || "";
 }
 
 function getGeminiKey() {
@@ -694,8 +697,8 @@ function buildPromptFromClassification() {
 
 // --- Reply ---
 async function runReply() {
-  const apiKey = getOpenAIKey();
-  if (!apiKey) return alert("OpenAI API 키를 먼저 저장해주세요.");
+  const apiKey = getAnthropicKey();
+  if (!apiKey) return alert("Anthropic API 키를 먼저 저장해주세요.");
 
   const feedbackText = document.getElementById("ocr-text").value.trim();
   if (!feedbackText) return;
@@ -707,8 +710,8 @@ async function runReply() {
   try {
     const { systemText, conditionText, introText } = buildPromptFromClassification();
     const body = {
+      system: systemText,
       messages: [
-        { role: "system", content: systemText },
         { role: "user", content:
           introText + "\n\n" +
           feedbackText + "\n\n" +
@@ -719,7 +722,7 @@ async function runReply() {
       ]
     };
 
-    const text = await callOpenAI(apiKey, body, document.querySelector(".reply-label"));
+    const text = await callClaude(apiKey, body, document.querySelector(".reply-label"));
     document.getElementById("reply-text").value = text;
   } catch (e) {
     showError("reply-error", e.message);
@@ -785,16 +788,21 @@ async function callGeminiOcr(apiKey, imageBase64, mimeType, statusEl) {
   throw new Error(rawMsg || "Gemini API 오류가 발생했습니다.");
 }
 
-// --- OpenAI API ---
-async function callOpenAI(apiKey, body, statusEl) {
-  if (statusEl) statusEl.textContent = OPENAI_MODEL + " 처리 중...";
+// --- Anthropic Claude API ---
+async function callClaude(apiKey, body, statusEl) {
+  if (statusEl) statusEl.textContent = CLAUDE_MODEL + " 처리 중...";
 
   let res, data;
   try {
-    res = await fetch(OPENAI_API_URL, {
+    res = await fetch(ANTHROPIC_API_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + apiKey },
-      body: JSON.stringify({ model: OPENAI_MODEL, ...body }),
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 2048, ...body }),
     });
     data = await res.json();
   } catch (e) {
@@ -802,18 +810,18 @@ async function callOpenAI(apiKey, body, statusEl) {
   }
 
   if (res.ok) {
-    const choice = data.choices?.[0];
-    if (!choice) throw new Error("응답에 결과가 없습니다.");
-    const { finish_reason } = choice;
-    if (finish_reason && finish_reason !== "stop" && finish_reason !== "length") {
-      throw new Error("생성이 중단되었습니다: " + finish_reason);
+    const block = data.content?.[0];
+    if (!block) throw new Error("응답에 결과가 없습니다.");
+    if (data.stop_reason && data.stop_reason !== "end_turn" && data.stop_reason !== "max_tokens") {
+      throw new Error("생성이 중단되었습니다: " + data.stop_reason);
     }
-    const text = choice.message?.content;
+    const text = block.text;
     if (!text) throw new Error("응답에서 텍스트를 찾을 수 없습니다.");
     return text;
   }
 
   const rawMsg = data.error?.message || "";
+  if (res.status === 401 || res.status === 403) throw new Error("Anthropic API 키 또는 권한을 확인해주세요.");
   if (res.status === 429) throw new Error("요청 한도 초과. 잠시 후 다시 시도해주세요.");
   if (res.status === 503) throw new Error("서버 오류. 잠시 후 다시 시도해주세요.");
   throw new Error(rawMsg || "API 오류가 발생했습니다.");
