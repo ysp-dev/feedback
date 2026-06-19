@@ -886,6 +886,17 @@ body::before {
 
 .chip-dir { padding: .38rem .8rem; }
 
+.chip-custom {
+  border-style: dashed;
+  color: var(--text-3);
+}
+.chip-custom:hover {
+  border-style: dashed;
+}
+.chip-custom.selected {
+  border-style: solid;
+}
+
 .chip-sub {
   display: block;
   font-size: 9px;

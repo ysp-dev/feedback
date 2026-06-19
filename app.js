@@ -600,7 +600,7 @@ const SUBTYPE_PROMPT = {
   requesting:  { "의사결정 요청": "결정 필요 사항 명시 → 선택 가능한 옵션 → 권고안과 근거 → 결정 요청", "자원 배정 승인": "필요 자원 종류·규모 → 미확보 시 리스크 → 승인 요청 및 기한", "우선순위 확정 요청": "현 우선순위 갈등 상황 → 경영진 판단이 필요한 이유 → 확정 기한 요청" }
 };
 
-const clsState = { direction: null, type: null, subtype: null, intensity: null };
+const clsState = { direction: null, type: null, subtype: null, intensity: null, customTypeText: "", customSubtypeText: "" };
 
 function selectChip(el, group) {
   el.closest('.classify-chips').querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
@@ -608,30 +608,57 @@ function selectChip(el, group) {
   clsState[group] = el.dataset.value;
   if (group === 'direction') onDirectionChange(el.dataset.value);
   else if (group === 'type') onTypeChange(el.dataset.value);
+  else if (group === 'subtype') onSubtypeChange(el.dataset.value);
 }
 
 function onDirectionChange(direction) {
   const types = CLASSIFY_DATA[direction].types;
   clsState.type = null;
   clsState.subtype = null;
-  document.getElementById('type-chips').innerHTML = types.map(t =>
-    `<button class="chip" data-value="${t.id}" onclick="selectChip(this,'type')">${t.label}</button>`
-  ).join('');
+  clsState.customTypeText = "";
+  clsState.customSubtypeText = "";
+  document.getElementById('type-chips').innerHTML =
+    types.map(t => `<button class="chip" data-value="${t.id}" onclick="selectChip(this,'type')">${t.label}</button>`).join('') +
+    `<button class="chip chip-custom" data-value="__custom__" onclick="selectChip(this,'type')">직접 입력</button>`;
   document.getElementById('type-desc').textContent = '';
+  document.getElementById('type-custom-input').classList.add('d-none');
+  document.getElementById('type-custom-input').value = '';
   document.getElementById('type-group').classList.remove('d-none');
   document.getElementById('subtype-group').classList.add('d-none');
 }
 
 function onTypeChange(typeId) {
+  clsState.subtype = null;
+  clsState.customSubtypeText = "";
+  const customInput = document.getElementById('type-custom-input');
+  if (typeId === '__custom__') {
+    document.getElementById('type-desc').textContent = '';
+    customInput.classList.remove('d-none');
+    customInput.focus();
+    document.getElementById('subtype-group').classList.add('d-none');
+    return;
+  }
+  customInput.classList.add('d-none');
   const types = CLASSIFY_DATA[clsState.direction].types;
   const typeData = types.find(t => t.id === typeId);
   if (!typeData) return;
-  clsState.subtype = null;
   document.getElementById('type-desc').textContent = typeData.desc;
-  document.getElementById('subtype-chips').innerHTML = typeData.subtypes.map(s =>
-    `<button class="chip" data-value="${s}" onclick="selectChip(this,'subtype')">${s}</button>`
-  ).join('');
+  document.getElementById('subtype-chips').innerHTML =
+    typeData.subtypes.map(s => `<button class="chip" data-value="${s}" onclick="selectChip(this,'subtype')">${s}</button>`).join('') +
+    `<button class="chip chip-custom" data-value="__custom__" onclick="selectChip(this,'subtype')">직접 입력</button>`;
+  document.getElementById('subtype-custom-input').classList.add('d-none');
+  document.getElementById('subtype-custom-input').value = '';
   document.getElementById('subtype-group').classList.remove('d-none');
+}
+
+function onSubtypeChange(subtypeId) {
+  const customInput = document.getElementById('subtype-custom-input');
+  if (subtypeId === '__custom__') {
+    customInput.classList.remove('d-none');
+    customInput.focus();
+  } else {
+    customInput.classList.add('d-none');
+  }
 }
 
 const INTENSITY_CONFIG = {
@@ -676,8 +703,15 @@ function buildPromptFromClassification() {
     conditions.push("격식체 존댓말, 전문적이고 정중한 어조");
     conditions.push("구성: 감사 표현 → 피드백 핵심 수용 및 직접 응답 → 구체적 개선·실행 의지");
   }
-  if (typeData) {
-    const subtypeHint = (cls.subtype && SUBTYPE_PROMPT[cls.type]) ? SUBTYPE_PROMPT[cls.type][cls.subtype] : null;
+  if (cls.type === '__custom__') {
+    if (cls.customTypeText) conditions.push(cls.customTypeText);
+  } else if (typeData) {
+    let subtypeHint = null;
+    if (cls.subtype === '__custom__') {
+      subtypeHint = cls.customSubtypeText || null;
+    } else if (cls.subtype && SUBTYPE_PROMPT[cls.type]) {
+      subtypeHint = SUBTYPE_PROMPT[cls.type][cls.subtype] || null;
+    }
     conditions.push(subtypeHint || typeData.desc);
   }
   conditions.push(intensityCfg.condition);
@@ -896,10 +930,16 @@ function resetAll() {
   document.getElementById("reply-text").value = "";
   document.getElementById("reply-error").classList.add("d-none");
   Object.keys(clsState).forEach(k => clsState[k] = null);
+  clsState.customTypeText = "";
+  clsState.customSubtypeText = "";
   document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
   document.getElementById('type-group').classList.add('d-none');
   document.getElementById('subtype-group').classList.add('d-none');
   document.getElementById('type-desc').textContent = '';
+  const tci = document.getElementById('type-custom-input');
+  if (tci) { tci.classList.add('d-none'); tci.value = ''; }
+  const sci = document.getElementById('subtype-custom-input');
+  if (sci) { sci.classList.add('d-none'); sci.value = ''; }
 }
 
 // --- API Section toggle ---

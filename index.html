@@ -148,10 +148,14 @@
         <span class="classify-label">유형</span>
         <div class="classify-chips" id="type-chips"></div>
         <div id="type-desc" class="classify-desc"></div>
+        <input id="type-custom-input" class="input d-none" type="text" placeholder="유형을 직접 입력하세요"
+          oninput="clsState.customTypeText = this.value.trim()" />
       </div>
       <div class="classify-group d-none" id="subtype-group">
         <span class="classify-label">세부 유형</span>
         <div class="classify-chips" id="subtype-chips"></div>
+        <input id="subtype-custom-input" class="input d-none" type="text" placeholder="세부 유형을 직접 입력하세요"
+          oninput="clsState.customSubtypeText = this.value.trim()" />
       </div>
       <div class="classify-group">
         <span class="classify-label">강도</span>
